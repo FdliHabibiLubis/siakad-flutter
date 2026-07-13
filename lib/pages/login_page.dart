@@ -1,128 +1,90 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/supabase_config.dart';
+import '../utils/theme.dart';
 import 'register_page.dart';
-import 'home_page.dart';
+import 'dashboard_shell.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const String baseUrl = "http://localhost/flutter_api/";
-
-  final TextEditingController username = TextEditingController();
-  final TextEditingController password = TextEditingController();
-
-  bool apiConnected = false;
-  bool isLoading = false;
-  bool showPassword = false;
-  Timer? timer;
-
-  void clearLogin() {
-    username.clear();
-    password.clear();
-  }
-
-  Future<bool> checkStatusApi() async {
-    try {
-      final res = await http.get(Uri.parse("${baseUrl}cek_koneksi.php"));
-      if (res.statusCode == 200) {
-        var data = jsonDecode(res.body);
-        bool status = data["status"] == true;
-        if (mounted) setState(() => apiConnected = status);
-        return status;
-      }
-      if (mounted) setState(() => apiConnected = false);
-      return false;
-    } catch (e) {
-      if (mounted) setState(() => apiConnected = false);
-      return false;
-    }
-  }
-
-  Future login() async {
-    if (username.text.trim().isEmpty || password.text.trim().isEmpty) {
-      _snack("Username dan Password wajib diisi", Colors.orange);
-      return;
-    }
-    bool apiAktif = await checkStatusApi();
-    if (!apiAktif) {
-      _snack("Server API Tidak Terhubung", Colors.red);
-      return;
-    }
-    setState(() => isLoading = true);
-    try {
-      final res = await http.post(
-        Uri.parse("${baseUrl}login.php"),
-        body: {"username": username.text, "password": password.text},
-      );
-      var data = jsonDecode(res.body);
-      if (data["success"] == true) {
-        _snack("Login Berhasil", const Color(0xFF43A047));
-        clearLogin();
-        Future.delayed(const Duration(milliseconds: 600), () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomePage(
-                role: data["role"] ?? "user",
-                nama: data["nama"] ?? "",
-              ),
-            ),
-          );
-        });
-      } else {
-        _snack("Username atau Password Salah", Colors.red);
-      }
-    } catch (e) {
-      _snack("Error: $e", Colors.red);
-    }
-    if (mounted) setState(() => isLoading = false);
-  }
-
-  void _snack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    checkStatusApi();
-    timer = Timer.periodic(const Duration(seconds: 5), (_) => checkStatusApi());
-  }
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _showPassword = false;
 
   @override
   void dispose() {
-    timer?.cancel();
-    username.dispose();
-    password.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await SupabaseConfig.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (response.user != null) {
+        // Ambil profil dari public.users
+        final profile = await SupabaseConfig.getCurrentUserProfile();
+        if (profile != null) {
+          final String role = profile['role'] ?? 'mahasiswa';
+          _snack("Login berhasil sebagai ${role.toUpperCase()}", Colors.green);
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DashboardShell(role: role, profile: profile),
+            ),
+          );
+        } else {
+          // Jika profil tidak ditemukan, sign out
+          await SupabaseConfig.client.auth.signOut();
+          _snack("Akun Anda belum tersinkronisasi di database.", Colors.orange);
+        }
+      }
+    } on AuthException catch (e) {
+      String msg = e.message;
+      if (msg.toLowerCase().contains("invalid login credentials") ||
+          msg.toLowerCase().contains("invalid credentials") ||
+          msg.toLowerCase().contains("password")) {
+        msg = "Kata sandi Anda salah";
+      }
+      _snack(msg, Colors.red);
+    } catch (e) {
+      _snack("Terjadi kesalahan: $e", Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _snack(String msg, Color color) {
+    AppTheme.showSnackBar(context, msg, backgroundColor: color);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!SupabaseConfig.isConfigured) {
+      return AppTheme.buildSetupScreen(context);
+    }
+
     final isWide = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3F51B5), Color(0xFF1A237E)],
-          ),
-        ),
+        color: AppTheme.primary,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -138,65 +100,13 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // ── WIDE (web) ──────────────────────────────────────────────
   Widget _buildWideLayout() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 960),
+        constraints: const BoxConstraints(maxWidth: 900),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Sisi kiri: branding
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.school,
-                        size: 64,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      "Aplikasi\nData Mahasiswa",
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Kelola data mahasiswa dengan mudah dan cepat.",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withOpacity(0.75),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    _apiStatusBadge(),
-                    const SizedBox(height: 16),
-                    _featureItem(Icons.people, "Manajemen data mahasiswa"),
-                    _featureItem(
-                      Icons.admin_panel_settings,
-                      "Kontrol akses role admin & user",
-                    ),
-                    _featureItem(Icons.search, "Pencarian data real-time"),
-                  ],
-                ),
-              ),
-            ),
-            // Sisi kanan: form
+            Expanded(child: _buildBrandingSection()),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -209,72 +119,58 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // ── MOBILE ──────────────────────────────────────────────────
   Widget _buildMobileLayout() {
     return Column(
       children: [
-        const Icon(Icons.school, size: 72, color: Colors.white),
+        const Icon(Icons.school_outlined, size: 72, color: Colors.white),
         const SizedBox(height: 12),
         const Text(
-          "Data Mahasiswa",
+          "Sistem Informasi Akademik",
           style: TextStyle(
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+            letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 8),
-        _apiStatusBadge(),
-        const SizedBox(height: 28),
+        const SizedBox(height: 4),
+        Text(
+          "Academic Management Platform",
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 32),
         _buildFormCard(),
       ],
     );
   }
 
-  Widget _apiStatusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.circle,
-            size: 10,
-            color: apiConnected ? Colors.greenAccent : Colors.redAccent,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            apiConnected ? "Server Online" : "Server Offline",
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _featureItem(IconData icon, String text) {
+  Widget _buildBrandingSection() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.white, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            text,
+          const Icon(Icons.school, size: 64, color: AppTheme.primary),
+          const SizedBox(height: 24),
+          const Text(
+            "Sistem Informasi\nAkademik",
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
-              fontSize: 14,
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Kelola jadwal, KRS, materi kuliah, tugas, dan nilai dalam satu platform terintegrasi.",
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.white.withOpacity(0.7),
+              height: 1.5,
             ),
           ),
         ],
@@ -284,110 +180,119 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildFormCard() {
     return Card(
-      elevation: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppTheme.borderLight, width: 1.0),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Masuk",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A237E),
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "Silakan login untuk melanjutkan",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: username,
-              decoration: const InputDecoration(
-                labelText: "Username",
-                prefixIcon: Icon(
-                  Icons.person_outline,
-                  color: Color(0xFF3F51B5),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
+        padding: const EdgeInsets.all(32),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Masuk Akun",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark,
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: password,
-              obscureText: !showPassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                prefixIcon: const Icon(
-                  Icons.lock_outline,
-                  color: Color(0xFF3F51B5),
+              const SizedBox(height: 6),
+              const Text(
+                "Gunakan email dan password terdaftar Anda",
+                style: TextStyle(color: AppTheme.textLight, fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              
+              // Email Label
+              const Text(
+                "Email",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
+              ),
+              const SizedBox(height: 6),
+              // Email Input
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: "name@universitas.ac.id",
+                  prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primary),
                 ),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    showPassword ? Icons.visibility_off : Icons.visibility,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return "Email wajib diisi";
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
+                    return "Format email tidak valid";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              // Password Label
+              const Text(
+                "Password",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
+              ),
+              const SizedBox(height: 6),
+              // Password Input
+              TextFormField(
+                controller: _passwordController,
+                obscureText: !_showPassword,
+                decoration: InputDecoration(
+                  hintText: "********",
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primary),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppTheme.textLight,
+                    ),
+                    onPressed: () => setState(() => _showPassword = !_showPassword),
                   ),
-                  onPressed: () => setState(() => showPassword = !showPassword),
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return "Password wajib diisi";
+                  if (val.length < 6) return "Password minimal 6 karakter";
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              
+              // Login Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text("MASUK"),
                 ),
               ),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : login,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3F51B5),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        "MASUK",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  clearLogin();
-                  Navigator.push(
+              const SizedBox(height: 16),
+              
+              // Registration Links
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const RegisterPage()),
-                  );
-                },
-                child: const Text(
-                  "Belum punya akun? Daftar di sini",
-                  style: TextStyle(color: Color(0xFF3F51B5)),
+                  ),
+                  child: const Text("Belum punya akun? Daftar di sini"),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
