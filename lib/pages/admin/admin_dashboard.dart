@@ -32,6 +32,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final client = SupabaseConfig.client;
@@ -57,9 +58,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error memuat data dashboard: $e"), backgroundColor: Colors.red),
-        );
+        AppTheme.showSnackBar(context, "Error memuat data dashboard: $e", backgroundColor: Colors.red);
       }
     }
   }
@@ -100,9 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     if (result == true) {
       if (titleController.text.trim().isEmpty || contentController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Judul dan isi tidak boleh kosong"), backgroundColor: Colors.orange),
-        );
+        AppTheme.showSnackBar(context, "Judul dan isi tidak boleh kosong", backgroundColor: Colors.orange);
         return;
       }
 
@@ -114,13 +111,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           'kelas_id': null, // Pengumuman umum
         });
         _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Pengumuman berhasil diterbitkan"), backgroundColor: Colors.green),
-        );
+        AppTheme.showSnackBar(context, "Pengumuman berhasil diterbitkan", backgroundColor: Colors.green);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal mengirim pengumuman: $e"), backgroundColor: Colors.red),
-        );
+        AppTheme.showSnackBar(context, "Gagal mengirim pengumuman: $e", backgroundColor: Colors.red);
       }
     }
   }
@@ -146,10 +139,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       try {
         await SupabaseConfig.client.from('pengumuman').delete().eq('id', id);
         _loadData();
+        AppTheme.showSnackBar(context, "Pengumuman berhasil dihapus", backgroundColor: Colors.green);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menghapus: $e"), backgroundColor: Colors.red),
-        );
+        AppTheme.showSnackBar(context, "Gagal menghapus: $e", backgroundColor: Colors.red);
       }
     }
   }
@@ -157,116 +149,85 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard Admin"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: "Muat Ulang Data",
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.accent),
-            onPressed: widget.onLogout,
-            tooltip: "Logout",
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.bgLight,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Welcome Card
-                    _buildWelcomeCard(),
-                    const SizedBox(height: 24),
-                    
-                    // Stats Grid
-                    const Text(
-                      "Statistik Akademik",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildStatsGrid(),
-                    const SizedBox(height: 28),
-                    
-                    // Actions Menu
-                    const Text(
-                      "Menu Pengelolaan",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionsMenu(),
-                    const SizedBox(height: 28),
-                    
-                    // Announcements Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Pengumuman Akademik",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                        ),
-                        TextButton.icon(
-                          onPressed: _createAnnouncement,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text("Buat"),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildAnnouncementsList(),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _buildWelcomeCard() {
-    return AppTheme.buildGradientCard(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Selamat Datang, ${widget.profile['nama']}!",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Anda masuk sebagai Administrator. Kelola seluruh konfigurasi data akademik melalui menu di bawah.",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.admin_panel_settings, color: Colors.white, size: 36),
-            )
-          ],
-        ),
-      ),
+               onRefresh: _loadData,
+               child: SingleChildScrollView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     // Academic Header Gradient
+                     AppTheme.buildHeaderGradient(
+                       context: context,
+                       title: "Selamat Datang, ${widget.profile['nama']}!",
+                       subtitle: "Administrator Akademik",
+                       metaText: "Kelola konfigurasi data & akun ciakad",
+                       badgeText: "Portal Administrator",
+                       icon: Icons.admin_panel_settings_outlined,
+                       actions: [
+                         IconButton(
+                           icon: const Icon(Icons.refresh, color: Colors.white),
+                           onPressed: _loadData,
+                           tooltip: "Muat Ulang Data",
+                         ),
+                         IconButton(
+                           icon: const Icon(Icons.logout, color: Colors.white),
+                           onPressed: widget.onLogout,
+                           tooltip: "Logout",
+                         ),
+                       ],
+                     ),
+                     
+                     Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           // Stats Grid
+                           const Text(
+                             "Statistik Akademik",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildStatsGrid(),
+                           const SizedBox(height: 28),
+                           
+                           // Actions Menu
+                           const Text(
+                             "Menu Pengelolaan",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildActionsMenu(),
+                           const SizedBox(height: 28),
+                           
+                           // Announcements Section
+                           Row(
+                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                             children: [
+                               const Text(
+                                 "Pengumuman Akademik",
+                                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                               ),
+                               TextButton.icon(
+                                 onPressed: _createAnnouncement,
+                                 icon: const Icon(Icons.add, size: 18),
+                                 label: const Text("Buat"),
+                               ),
+                             ],
+                           ),
+                           const SizedBox(height: 12),
+                           _buildAnnouncementsList(),
+                         ],
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
+             ),
     );
   }
 
@@ -280,46 +241,42 @@ class _AdminDashboardState extends State<AdminDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.4,
       children: [
-        _buildStatCard("Mahasiswa", _totalMhs.toString(), Icons.people_outline, Colors.blue),
-        _buildStatCard("Dosen", _totalDosen.toString(), Icons.supervisor_account_outlined, Colors.purple),
-        _buildStatCard("Mata Kuliah", _totalMatkul.toString(), Icons.menu_book_outlined, Colors.orange),
-        _buildStatCard("Menunggu KRS", _pendingKrs.toString(), Icons.pending_actions_outlined, _pendingKrs > 0 ? AppTheme.accent : Colors.green),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String val, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color, size: 24),
-                Text(
-                  val,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                )
-              ],
-            ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.bold),
-            )
-          ],
+        AppTheme.buildStatCard(
+          label: "Mahasiswa",
+          value: _totalMhs.toString(),
+          icon: Icons.people_outline,
+          color: Colors.blue,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageUsersPage())),
         ),
-      ),
+        AppTheme.buildStatCard(
+          label: "Dosen",
+          value: _totalDosen.toString(),
+          icon: Icons.supervisor_account_outlined,
+          color: Colors.purple,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageUsersPage())),
+        ),
+        AppTheme.buildStatCard(
+          label: "Mata Kuliah",
+          value: _totalMatkul.toString(),
+          icon: Icons.menu_book_outlined,
+          color: Colors.orange,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAkademikPage())),
+        ),
+        AppTheme.buildStatCard(
+          label: "Menunggu KRS",
+          value: _pendingKrs.toString(),
+          icon: Icons.pending_actions_outlined,
+          color: _pendingKrs > 0 ? AppTheme.accent : Colors.green,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KrsApprovalPage())),
+        ),
+      ],
     );
   }
 
   Widget _buildActionsMenu() {
     return Column(
       children: [
-        _buildActionTile(
+        AppTheme.buildMenuListItem(
           icon: Icons.person_add_outlined,
           title: "Kelola Pengguna",
           subtitle: "Tambah, Edit, dan Hapus akun Dosen & Mahasiswa",
@@ -327,7 +284,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageUsersPage())),
         ),
         const SizedBox(height: 12),
-        _buildActionTile(
+        AppTheme.buildMenuListItem(
           icon: Icons.folder_open_outlined,
           title: "Kelola Data Akademik",
           subtitle: "Program Studi, Semester, Mata Kuliah, Kelas, & Jadwal",
@@ -335,7 +292,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAkademikPage())),
         ),
         const SizedBox(height: 12),
-        _buildActionTile(
+        AppTheme.buildMenuListItem(
           icon: Icons.assignment_turned_in_outlined,
           title: "Persetujuan KRS Mahasiswa",
           subtitle: "Periksa, setujui, atau tolak KRS mahasiswa",
@@ -344,7 +301,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KrsApprovalPage())),
         ),
         const SizedBox(height: 12),
-        _buildActionTile(
+        AppTheme.buildMenuListItem(
           icon: Icons.grade_outlined,
           title: "Laporan Nilai Mahasiswa",
           subtitle: "Lihat transkrip nilai akhir seluruh mahasiswa",
@@ -352,7 +309,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAllGradesPage())),
         ),
         const SizedBox(height: 12),
-        _buildActionTile(
+        AppTheme.buildMenuListItem(
           icon: Icons.task_outlined,
           title: "Monitoring Tugas Kuliah",
           subtitle: "Pantau seluruh penugasan yang diberikan dosen",
@@ -363,47 +320,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    String? badge,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: AppTheme.accent, borderRadius: BorderRadius.circular(12)),
-                child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.textLight),
-          ],
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-
   Widget _buildAnnouncementsList() {
     if (_announcements.isEmpty) {
       return Card(
+        margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Center(
@@ -423,7 +343,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _announcements.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ann = _announcements[index];
         final author = ann['users'] != null ? ann['users']['nama'] : 'Admin';
@@ -431,6 +351,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         final dateString = "${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
         
         return Card(
+          margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(

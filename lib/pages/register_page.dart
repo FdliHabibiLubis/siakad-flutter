@@ -80,7 +80,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _nextStep() {
     if (_currentStep == 0) {
-      // Validasi Step 1
       if (_emailController.text.trim().isEmpty ||
           _passwordController.text.isEmpty ||
           _namaController.text.trim().isEmpty) {
@@ -102,7 +101,6 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     
-    // Validasi tambahan untuk role mahasiswa
     if (_selectedRole == 'mahasiswa') {
       if (_nimController.text.trim().isEmpty) {
         _snack("NIM wajib diisi", Colors.orange);
@@ -113,7 +111,6 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
     } else {
-      // Dosen
       if (_nidnController.text.trim().isEmpty) {
         _snack("NIDN wajib diisi", Colors.orange);
         return;
@@ -122,7 +119,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _isLoading = true);
     try {
-      // Set metadata untuk sinkronisasi trigger
       final Map<String, dynamic> metadata = {
         'role': _selectedRole,
         'nama': _namaController.text.trim(),
@@ -163,40 +159,74 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width >= 800;
+
     return Scaffold(
-      body: Container(
-        color: AppTheme.primary,
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      const Icon(Icons.person_add_outlined, size: 64, color: Colors.white),
-                      const SizedBox(height: 12),
-                      const Text(
-                        "Daftar Akun Baru",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
+      backgroundColor: AppTheme.bgLight,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Top Header Gradient
+            Container(
+              width: double.infinity,
+              height: size.height * (isWide ? 0.3 : 0.35),
+              decoration: const BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white24,
+                      child: Icon(Icons.person_add_outlined, size: 36, color: Colors.white),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Pendaftaran Akun",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 20),
-                      _buildStepIndicator(),
-                      const SizedBox(height: 24),
-                      _buildCard(),
-                    ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStepIndicator(),
+                  ],
+                ),
+              ),
+            ),
+            // Floating Card Form
+            Transform.translate(
+              offset: const Offset(0, -32),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: isWide ? (size.width - 500) / 2 : 24),
+                child: Card(
+                  elevation: 4,
+                  shadowColor: Colors.black.withOpacity(0.04),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Form(
+                      key: _formKey,
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: _currentStep == 0 ? _buildStep1() : _buildStep2(),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -219,8 +249,8 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isActive ? Colors.white : Colors.white.withOpacity(0.2),
@@ -234,7 +264,8 @@ class _RegisterPageState extends State<RegisterPage> {
             "${step + 1}",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isActive ? Colors.white : Colors.white.withOpacity(0.6),
+              fontSize: 12,
+              color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.6),
             ),
           ),
         ),
@@ -242,7 +273,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 10,
             color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
           ),
@@ -254,28 +285,10 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildStepLine(bool active) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      width: 60,
+      width: 48,
       height: 2,
       color: active ? Colors.white : Colors.white.withOpacity(0.2),
-      margin: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-    );
-  }
-
-  Widget _buildCard() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppTheme.borderLight, width: 1.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: _currentStep == 0 ? _buildStep1() : _buildStep2(),
-        ),
-      ),
+      margin: const EdgeInsets.only(left: 6, right: 6, bottom: 14),
     );
   }
 
@@ -288,12 +301,11 @@ class _RegisterPageState extends State<RegisterPage> {
           "Informasi Akun",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
         ),
-        const Divider(height: 24),
+        const Divider(height: 20),
         
-        // Role Selection
         const Text(
           "Daftar Sebagai:",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textLight),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textLight),
         ),
         const SizedBox(height: 8),
         Row(
@@ -309,13 +321,11 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         const SizedBox(height: 20),
         
-        // Nama Lengkap Label
         const Text(
           "Nama Lengkap",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
         ),
         const SizedBox(height: 6),
-        // Nama Lengkap Input
         TextFormField(
           controller: _namaController,
           decoration: const InputDecoration(
@@ -326,13 +336,11 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         const SizedBox(height: 16),
 
-        // Email Label
         const Text(
           "Email",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
         ),
         const SizedBox(height: 6),
-        // Email Input
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -350,13 +358,11 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         const SizedBox(height: 16),
         
-        // Password Label
         const Text(
           "Password",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
         ),
         const SizedBox(height: 6),
-        // Password Input
         TextFormField(
           controller: _passwordController,
           obscureText: !_showPassword,
@@ -371,13 +377,11 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         const SizedBox(height: 16),
         
-        // Confirm Password Label
         const Text(
           "Konfirmasi Password",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
         ),
         const SizedBox(height: 6),
-        // Confirm Password Input
         TextFormField(
           controller: _confirmPasswordController,
           obscureText: !_showConfirmPassword,
@@ -394,7 +398,7 @@ class _RegisterPageState extends State<RegisterPage> {
         
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 52,
           child: ElevatedButton(
             onPressed: _nextStep,
             child: const Row(
@@ -476,13 +480,11 @@ class _RegisterPageState extends State<RegisterPage> {
         const Divider(height: 20),
         
         if (isMhs) ...[
-          // NIM Label
           const Text(
             "NIM (Nomor Induk Mahasiswa)",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
           ),
           const SizedBox(height: 6),
-          // NIM Input
           TextFormField(
             controller: _nimController,
             keyboardType: TextInputType.number,
@@ -494,13 +496,11 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 16),
           
-          // Program Studi Label
           const Text(
             "Program Studi",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
           ),
           const SizedBox(height: 6),
-          // Program Studi Input
           _isLoadingProdi
               ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
               : DropdownButtonFormField<String>(
@@ -527,13 +527,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
           const SizedBox(height: 16),
           
-          // Angkatan Label
           const Text(
             "Angkatan",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
           ),
           const SizedBox(height: 6),
-          // Angkatan Input
           DropdownButtonFormField<int>(
             isExpanded: true,
             value: _selectedAngkatan,
@@ -552,13 +550,11 @@ class _RegisterPageState extends State<RegisterPage> {
             },
           ),
         ] else ...[
-          // NIDN Label
           const Text(
             "NIDN (Nomor Induk Dosen Nasional)",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
           ),
           const SizedBox(height: 6),
-          // NIDN Input
           TextFormField(
             controller: _nidnController,
             keyboardType: TextInputType.number,
@@ -571,13 +567,11 @@ class _RegisterPageState extends State<RegisterPage> {
         ],
         const SizedBox(height: 16),
         
-        // Alamat Label
         const Text(
           "Alamat Lengkap",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
         ),
         const SizedBox(height: 6),
-        // Alamat Input
         TextFormField(
           controller: _alamatController,
           maxLines: 2,
@@ -591,7 +585,7 @@ class _RegisterPageState extends State<RegisterPage> {
         
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 52,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _register,
             child: _isLoading

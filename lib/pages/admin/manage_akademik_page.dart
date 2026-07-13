@@ -661,29 +661,115 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
 
   Widget _buildMatkulList() {
     if (_matkulList.isEmpty) return const Center(child: Text("Belum ada data Mata Kuliah"));
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _matkulList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _matkulList[index];
         final pName = item['program_studi'] != null ? item['program_studi']['nama'] : '-';
         final sName = item['semester'] != null ? item['semester']['nama'] : '-';
-        return Card(
-          child: ListTile(
-            title: Text("[${item['kode']}] ${item['nama']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              )
+            ],
+            border: Border.all(color: AppTheme.borderLight),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text("SKS: ${item['sks']} SKS"),
-                Text("Prodi: $pName"),
-                Text("Semester: $sName"),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _addOrEditMatkul(item)),
-                IconButton(icon: const Icon(Icons.delete, color: AppTheme.accent), onPressed: () => _deleteItem('mata_kuliah', item['id'])),
+                Container(
+                  width: 5,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.secondary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  item['kode'] ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: AppTheme.secondary, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                "${item['sks']} SKS",
+                                style: const TextStyle(color: AppTheme.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          item['nama'] ?? '',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.school_outlined, size: 14, color: AppTheme.textLight),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text("Prodi: $pName", style: const TextStyle(fontSize: 12, color: AppTheme.textLight))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.textLight),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text("Semester: $sName", style: const TextStyle(fontSize: 12, color: AppTheme.textLight))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.only(right: 8),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20), onPressed: () => _addOrEditMatkul(item)),
+                      IconButton(icon: const Icon(Icons.delete_outline, color: AppTheme.accent, size: 20), onPressed: () => _deleteItem('mata_kuliah', item['id'])),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -694,29 +780,115 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
 
   Widget _buildKelasList() {
     if (_kelasList.isEmpty) return const Center(child: Text("Belum ada data Kelas"));
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _kelasList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _kelasList[index];
-        final mk = item['mata_kuliah'];
+        final mk = item['mata_kuliah'] ?? {};
         final dName = item['dosen'] != null && item['dosen']['users'] != null ? item['dosen']['users']['nama'] : '-';
-        return Card(
-          child: ListTile(
-            title: Text("Kelas ${item['nama']} - ${mk['nama']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              )
+            ],
+            border: Border.all(color: AppTheme.borderLight),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text("Kode MK: ${mk['kode']}"),
-                Text("Dosen Pengampu: $dName"),
-                Text("Kuota: ${item['kuota']} Mahasiswa"),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _addOrEditKelas(item)),
-                IconButton(icon: const Icon(Icons.delete, color: AppTheme.accent), onPressed: () => _deleteItem('kelas', item['id'])),
+                Container(
+                  width: 5,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.secondary,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Kelas ${item['nama']}",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: AppTheme.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade700.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                "Kuota: ${item['kuota']} Mhs",
+                                style: TextStyle(color: Colors.amber.shade900, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          mk['nama'] ?? '',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_outline, size: 14, color: AppTheme.textLight),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text("Dosen: $dName", style: const TextStyle(fontSize: 12, color: AppTheme.textLight))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.badge_outlined, size: 14, color: AppTheme.textLight),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text("Kode MK: ${mk['kode'] ?? '-'}", style: const TextStyle(fontSize: 12, color: AppTheme.textLight))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.only(right: 8),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20), onPressed: () => _addOrEditKelas(item)),
+                      IconButton(icon: const Icon(Icons.delete_outline, color: AppTheme.accent, size: 20), onPressed: () => _deleteItem('kelas', item['id'])),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -727,34 +899,115 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
 
   Widget _buildJadwalList() {
     if (_jadwalList.isEmpty) return const Center(child: Text("Belum ada Jadwal Kuliah"));
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _jadwalList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _jadwalList[index];
-        final k = item['kelas'];
-        final mk = k['mata_kuliah'];
-        final dName = k['dosen']['users']['nama'];
-        final sName = item['semester']['nama'];
+        final k = item['kelas'] ?? {};
+        final mk = k['mata_kuliah'] ?? {};
+        final dName = k['dosen'] != null && k['dosen']['users'] != null ? k['dosen']['users']['nama'] : '-';
+        final sName = item['semester'] != null ? item['semester']['nama'] : '-';
         final timeString = "${item['jam_mulai'].toString().substring(0, 5)} - ${item['jam_selesai'].toString().substring(0, 5)}";
 
-        return Card(
-          child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.schedule)),
-            title: Text("${item['hari']}, $timeString (${(item['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (item['ruangan'] ?? '') : "Ruang ${item['ruangan'] ?? ''}"})", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              )
+            ],
+            border: Border.all(color: AppTheme.borderLight),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text("Mata Kuliah: ${mk['nama']} (Kelas ${k['nama']})"),
-                Text("Dosen: $dName"),
-                Text("Semester: $sName"),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _addOrEditJadwal(item)),
-                IconButton(icon: const Icon(Icons.delete, color: AppTheme.accent), onPressed: () => _deleteItem('jadwal', item['id'])),
+                Container(
+                  width: 5,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.accent,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "${item['hari']}, $timeString",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                (item['ruangan'] ?? '').toString().toLowerCase().contains('ruang')
+                                    ? (item['ruangan'] ?? '')
+                                    : "Ruang ${item['ruangan'] ?? ''}",
+                                style: const TextStyle(color: AppTheme.textLight, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          mk['nama'] ?? '',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "Kelas: ${k['nama'] ?? ''}  |  Dosen: $dName",
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Semester: $sName",
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.only(right: 8),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20), onPressed: () => _addOrEditJadwal(item)),
+                      IconButton(icon: const Icon(Icons.delete_outline, color: AppTheme.accent, size: 20), onPressed: () => _deleteItem('jadwal', item['id'])),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

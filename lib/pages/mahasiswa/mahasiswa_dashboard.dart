@@ -20,6 +20,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
   List<Map<String, dynamic>> _mySchedules = [];
   List<Map<String, dynamic>> _announcements = [];
   double _ipk = 0.0;
+  int _totalSks = 0;
   List<Map<String, dynamic>> _pendingAssignments = [];
 
   @override
@@ -29,6 +30,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
   }
 
   Future<void> _loadDashboardData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final client = SupabaseConfig.client;
@@ -63,6 +65,16 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
         _mySchedules = List<Map<String, dynamic>>.from(krsData);
       }
 
+      // Calculate registered SKS
+      int sksSum = 0;
+      for (var row in _mySchedules) {
+        final sks = row['jadwal']?['kelas']?['mata_kuliah']?['sks'];
+        if (sks != null) {
+          sksSum += (sks as num).toInt();
+        }
+      }
+      _totalSks = sksSum;
+
       // 4. Get announcements (general and class specific for approved courses)
       final List<String> enrolledClassIds = _mySchedules.map((k) => k['jadwal']['kelas_id'].toString()).toList();
       
@@ -83,7 +95,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
           .eq('mahasiswa_id', _studentDetails!['id']);
       
       double totalPoints = 0;
-      int totalSks = 0;
+      int totalSksWithGrades = 0;
       for (var row in gradesData) {
         final sks = row['kelas']?['mata_kuliah']?['sks'];
         final grade = row['grade'];
@@ -98,22 +110,20 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
             case 'E': gp = 0.0; break;
           }
           totalPoints += sksInt * gp;
-          totalSks += sksInt;
+          totalSksWithGrades += sksInt;
         }
       }
-      _ipk = totalSks > 0 ? totalPoints / totalSks : 0.0;
+      _ipk = totalSksWithGrades > 0 ? totalPoints / totalSksWithGrades : 0.0;
 
       // 6. Get Pending Assignments (tugas yang harus dikerjakan)
       _pendingAssignments = [];
       if (enrolledClassIds.isNotEmpty) {
-        // Fetch all assignments for enrolled classes
         final List<dynamic> allAssignments = await client
             .from('tugas')
             .select('*, kelas(*, mata_kuliah(*))')
             .inFilter('kelas_id', enrolledClassIds)
             .order('deadline', ascending: true);
             
-        // Fetch student's submissions
         final List<dynamic> mySubmissions = await client
             .from('pengumpulan_tugas')
             .select('tugas_id')
@@ -121,7 +131,6 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
             
         final submittedTugasIds = mySubmissions.map((s) => s['tugas_id'].toString()).toSet();
         
-        // Filter pending assignments
         _pendingAssignments = List<Map<String, dynamic>>.from(
           allAssignments.where((t) => !submittedTugasIds.contains(t['id'].toString()))
         );
@@ -140,55 +149,75 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final prodi = _studentDetails?['program_studi']?['nama'] ?? '-';
+    final nim = _studentDetails?['nim'] ?? '-';
+    final semesterName = _activeSemester?['nama'] ?? 'Belum ada semester aktif';
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Portal Mahasiswa"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDashboardData,
-            tooltip: "Muat Ulang",
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.accent),
-            onPressed: widget.onLogout,
-            tooltip: "Logout",
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.bgLight,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
                onRefresh: _loadDashboardData,
                child: SingleChildScrollView(
-                 padding: const EdgeInsets.all(20),
                  physics: const AlwaysScrollableScrollPhysics(),
                  child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
-                     _buildWelcomeCard(),
-                     const SizedBox(height: 24),
+                     // Academic Header Gradient
+                     AppTheme.buildHeaderGradient(
+                       context: context,
+                       title: "Hai, ${widget.profile['nama']}!",
+                       subtitle: prodi,
+                       metaText: "NIM: $nim",
+                       badgeText: "Semester Aktif: $semesterName",
+                       icon: Icons.school_outlined,
+                       actions: [
+                         IconButton(
+                           icon: const Icon(Icons.refresh, color: Colors.white),
+                           onPressed: _loadDashboardData,
+                           tooltip: "Muat Ulang",
+                         ),
+                         IconButton(
+                           icon: const Icon(Icons.logout, color: Colors.white),
+                           onPressed: widget.onLogout,
+                           tooltip: "Logout",
+                         ),
+                       ],
+                     ),
                      
-                     _buildIpkCard(),
-                     const SizedBox(height: 24),
-                     
-                     _buildPendingAssignments(),
-                     const SizedBox(height: 28),
+                     Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           // Stats Grid (IPK & SKS)
+                           _buildStatsGrid(),
+                           const SizedBox(height: 24),
+                           
+                           // Pending Assignments
+                           _buildPendingAssignments(),
+                           const SizedBox(height: 28),
 
-                     const Text(
-                       "Mata Kuliah Semester Ini",
-                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           // Course List
+                           const Text(
+                             "Mata Kuliah Semester Ini",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildEnrolledClasses(),
+                           const SizedBox(height: 28),
+                           
+                           // Announcements
+                           const Text(
+                             "Papan Pengumuman",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildAnnouncementsList(),
+                         ],
+                       ),
                      ),
-                     const SizedBox(height: 12),
-                     _buildEnrolledClasses(),
-                     const SizedBox(height: 28),
-                     
-                     const Text(
-                       "Papan Pengumuman",
-                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                     ),
-                     const SizedBox(height: 12),
-                     _buildAnnouncementsList(),
                    ],
                  ),
                ),
@@ -196,98 +225,27 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
     );
   }
 
-  Widget _buildWelcomeCard() {
-    final nim = _studentDetails?['nim'] ?? '-';
-    final prodi = _studentDetails?['program_studi']?['nama'] ?? '-';
-    final semesterName = _activeSemester?['nama'] ?? 'Belum ada semester aktif';
-    return AppTheme.buildGradientCard(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Hai, ${widget.profile['nama']}!",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "NIM: $nim | $prodi",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "Semester Aktif: $semesterName",
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.school, color: Colors.white, size: 36),
-            )
-          ],
+  Widget _buildStatsGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: AppTheme.buildStatCard(
+            label: "IP Kumulatif (IPK)",
+            value: _ipk.toStringAsFixed(2),
+            icon: Icons.stars_outlined,
+            color: AppTheme.primary,
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildIpkCard() {
-    return Card(
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.stars_outlined, color: AppTheme.primary, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Indeks Prestasi Kumulatif (IPK) Saat Ini",
-                    style: TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _ipk.toStringAsFixed(2),
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: AppTheme.buildStatCard(
+            label: "SKS Terdaftar",
+            value: "$_totalSks SKS",
+            icon: Icons.collections_bookmark_outlined,
+            color: AppTheme.secondary,
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -297,7 +255,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
       children: [
         const Text(
           "Tugas Yang Harus Dikerjakan",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
         ),
         const SizedBox(height: 12),
         if (_pendingAssignments.isEmpty)
@@ -336,7 +294,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
               return Card(
                 color: Colors.white,
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
                       Expanded(
@@ -353,7 +311,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
                                 mkName,
                                 style: const TextStyle(
                                   color: AppTheme.secondary,
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -362,7 +320,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
                             Text(
                               title,
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.textDark,
                               ),
@@ -373,18 +331,18 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
                                 desc,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 13, color: AppTheme.textLight),
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
                               ),
                             ],
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.alarm_on_outlined, size: 16, color: AppTheme.accent),
+                                const Icon(Icons.alarm_on_outlined, size: 14, color: AppTheme.accent),
                                 const SizedBox(width: 6),
                                 Text(
                                   "Batas Waktu: $deadlineStr",
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     color: AppTheme.accent,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -394,11 +352,11 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         ),
                         onPressed: () {
                           final sId = tugas['kelas_id'].toString();
@@ -428,7 +386,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
                         },
                         child: const Text(
                           "KERJAKAN",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -463,10 +421,11 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _mySchedules.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _mySchedules[index];
         final j = item['jadwal'] ?? {};
@@ -474,36 +433,28 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
         final mk = k['mata_kuliah'] ?? {};
         final dName = k['dosen'] != null ? k['dosen']['users']['nama'] : '-';
         final timeStr = "${j['jam_mulai'].substring(0, 5)} - ${j['jam_selesai'].substring(0, 5)}";
+        final scheduleText = "${j['hari']}, $timeStr";
+        final roomText = j['ruangan'] != null ? "Ruangan ${j['ruangan']}" : null;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: const CircleAvatar(child: Icon(Icons.class_outlined)),
-            title: Text("[${mk['kode']}] ${mk['nama']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text("Dosen: $dName | Kelas: ${k['nama']} (${mk['sks']} SKS)"),
-                const SizedBox(height: 2),
-                Text("Jadwal: ${j['hari']}, $timeStr (${(j['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (j['ruangan'] ?? '') : "Ruang ${j['ruangan'] ?? ''}"})", style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
-              ],
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MhsClassDetailPage(
-                    kelasItem: k,
-                    mahasiswaId: _studentDetails!['id'],
-                    jadwalItem: j,
-                  ),
+        return AppTheme.buildCourseCard(
+          code: mk['kode'] ?? '-',
+          name: mk['nama'] ?? '-',
+          teacher: dName,
+          schedule: scheduleText,
+          sks: (mk['sks'] as num?)?.toInt() ?? 0,
+          room: roomText,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MhsClassDetailPage(
+                  kelasItem: k,
+                  mahasiswaId: _studentDetails!['id'],
+                  jadwalItem: j,
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -511,8 +462,8 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
 
   Widget _buildAnnouncementsList() {
     if (_announcements.isEmpty) {
-      return Card(
-        child: const Padding(
+      return const Card(
+        child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Center(
             child: Text("Tidak ada pengumuman baru", style: TextStyle(color: AppTheme.textLight, fontSize: 12)),
@@ -521,10 +472,11 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _announcements.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ann = _announcements[index];
         final date = DateTime.parse(ann['created_at']).toLocal();
@@ -533,7 +485,7 @@ class _MahasiswaDashboardState extends State<MahasiswaDashboard> {
         final scopeText = isGeneral ? "PENGUMUMAN UMUM" : "KELAS ${ann['kelas']['nama']}";
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(

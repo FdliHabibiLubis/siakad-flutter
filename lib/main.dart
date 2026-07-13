@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'utils/supabase_config.dart';
 import 'utils/theme.dart';
-import 'pages/login_page.dart';
+import 'pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,9 +29,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Sistem Informasi Akademik',
+      title: 'CIAKAD (Cistem Akademik)',
       theme: AppTheme.lightTheme,
-      home: const LoginPage(),
+      home: const SplashPage(),
     );
   }
 }

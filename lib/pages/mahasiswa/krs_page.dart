@@ -250,26 +250,150 @@ class _KrsPageState extends State<KrsPage> {
                             
                             final isChecked = _selectedJadwalIds.contains(jId);
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: CheckboxListTile(
-                                value: isChecked,
-                                enabled: !locked,
-                                activeColor: AppTheme.primary,
-                                title: Text("[${mk['kode']}] ${mk['nama']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Kelas: ${k['nama']} | SKS: ${mk['sks']} SKS"),
-                                    Text("Dosen: $dName"),
-                                    Text("Jadwal: ${item['hari']}, $timeStr (${(item['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (item['ruangan'] ?? '') : "Ruang ${item['ruangan'] ?? ''}"})", style: const TextStyle(fontSize: 11, color: AppTheme.textLight)),
-                                  ],
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardLight,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isChecked ? AppTheme.primary : AppTheme.borderLight,
+                          width: isChecked ? 1.5 : 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          onTap: locked
+                              ? null
+                              : () => _toggleSchedule(jId, !isChecked),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Selection Strip Indicator
+                                Container(
+                                  width: 5,
+                                  color: isChecked ? AppTheme.primary : Colors.transparent,
                                 ),
-                                onChanged: (val) {
-                                  if (val != null) _toggleSchedule(jId, val);
-                                },
-                              ),
-                            );
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.secondary.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                mk['kode'] ?? '',
+                                                style: const TextStyle(
+                                                  color: AppTheme.secondary,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primary.withOpacity(0.06),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                "${mk['sks']} SKS",
+                                                style: const TextStyle(
+                                                  color: AppTheme.primary,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          mk['nama'] ?? '',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.person_outline, size: 14, color: AppTheme.textLight),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                "Dosen: $dName",
+                                                style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.access_time_outlined, size: 14, color: AppTheme.textLight),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                "Jadwal: ${item['hari']}, $timeStr",
+                                                style: const TextStyle(fontSize: 11, color: AppTheme.textLight),
+                                              ),
+                                            ),
+                                            if (item['ruangan'] != null) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.shade100,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  "Ruang ${item['ruangan']}",
+                                                  style: TextStyle(fontSize: 9, color: AppTheme.textLight.withOpacity(0.9), fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Selection circle indicator on the right side
+                                Container(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    isChecked ? Icons.check_circle : Icons.radio_button_unchecked,
+                                    color: isChecked ? AppTheme.primary : AppTheme.textLight.withOpacity(0.4),
+                                    size: 24,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
                           },
                         ),
                 ),

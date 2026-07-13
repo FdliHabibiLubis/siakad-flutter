@@ -67,7 +67,7 @@ class _DashboardShellState extends State<DashboardShell> {
             Text("Logout"),
           ],
         ),
-        content: const Text("Apakah Anda yakin ingin keluar dari sistem akademik ini?"),
+        content: const Text("Apakah Anda yakin ingin keluar dari cistem akademik ini?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

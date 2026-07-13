@@ -57,11 +57,11 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
           context: context,
           builder: (_) => AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.red),
+                Icon(Icons.warning_amber_rounded, color: AppTheme.accent),
                 SizedBox(width: 8),
                 Text("Konfirmasi Hapus"),
               ],
@@ -73,7 +73,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                 child: const Text("Tidak"),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accent),
                 onPressed: () => Navigator.pop(context, true),
                 child: const Text("Ya", style: TextStyle(color: Colors.white)),
               ),
@@ -109,26 +109,26 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.edit, color: Color(0xFF3F51B5)),
-                      SizedBox(width: 8),
-                      Text(
+                      const Icon(Icons.edit, color: AppTheme.primary),
+                      const SizedBox(width: 8),
+                      const Text(
                         "Edit Data Mahasiswa",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A237E),
+                          color: AppTheme.primary,
                         ),
                       ),
                     ],
@@ -140,17 +140,14 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                     controller: TextEditingController(text: item['nim'] ?? ''),
                     decoration: InputDecoration(
                       labelText: "NIM (tidak bisa diubah)",
-                      prefixIcon: const Icon(Icons.badge, color: Colors.grey),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                      ),
+                      prefixIcon: const Icon(Icons.badge, color: AppTheme.textLight),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                     ),
                   ),
                   const SizedBox(height: 12),
                   _dialogField(eNama, "Nama", Icons.person_outline),
-                  _dialogField(eJurusan, "Jurusan", Icons.school),
+                  _dialogField(eJurusan, "Jurusan", Icons.school_outlined),
                   _dialogFieldMulti(eAlamat, "Alamat", Icons.home_outlined),
                   _dialogField(
                     eUsername,
@@ -165,13 +162,13 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                         onPressed: () => Navigator.pop(context),
                         child: const Text("Batal"),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3F51B5),
+                          backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: () async {
@@ -239,16 +236,20 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
     final data = filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3F51B5),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+          ),
+        ),
         foregroundColor: Colors.white,
-        title: const Text("Data Mahasiswa"),
+        title: const Text("Data Mahasiswa (API PHP)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         elevation: 0,
         actions: [
           IconButton(
             onPressed: getMahasiswa,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             tooltip: "Refresh",
           ),
         ],
@@ -257,8 +258,10 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
         children: [
           // ── Search + stat bar ───────────────────────────
           Container(
-            color: const Color(0xFF3F51B5),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+            decoration: const BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
             child: Column(
               children: [
                 // Stat row
@@ -269,22 +272,30 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                     _statChip(Icons.search, "${data.length}", "Ditampilkan"),
                   ],
                 ),
-                const SizedBox(height: 10),
-                // Search
+                const SizedBox(height: 12),
+                // Search input
                 TextField(
                   onChanged: (v) => setState(() => keyword = v.toLowerCase()),
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: AppTheme.textDark, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: "Cari nama, NIM, jurusan, username...",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                    prefixIcon: const Icon(Icons.search, color: Colors.white),
+                    hintStyle: const TextStyle(color: AppTheme.textLight, fontSize: 14),
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textLight),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.15),
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.secondary, width: 1.5),
+                    ),
                   ),
                 ),
               ],
@@ -295,7 +306,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
           Expanded(
             child: isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF3F51B5)),
+                    child: CircularProgressIndicator(),
                   )
                 : data.isEmpty
                 ? _buildEmpty()
@@ -313,34 +324,35 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
   // ════════════════════════════════════════════════════
   Widget _buildTable(List<dynamic> data, bool isAdmin) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shadowColor: Colors.black.withOpacity(0.04),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Header card ──────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-              color: const Color(0xFF1A237E),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              color: AppTheme.primary,
               child: Row(
                 children: [
-                  const Icon(Icons.table_chart, color: Colors.white, size: 18),
+                  const Icon(Icons.table_chart_outlined, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   const Text(
-                    "Daftar Mahasiswa",
+                    "Daftar Mahasiswa (Tabel Dinamis)",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 15,
                     ),
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
+                      horizontal: 12,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
@@ -349,7 +361,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                     ),
                     child: Text(
                       "${data.length} mahasiswa",
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -358,8 +370,8 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
 
             // ── Header kolom ─────────────────────────────
             Container(
-              color: const Color(0xFFE8EAF6),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              color: AppTheme.primary.withOpacity(0.06),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   const SizedBox(width: 40, child: _H("No")),
@@ -373,7 +385,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                 ],
               ),
             ),
-            Divider(height: 1, color: Colors.grey.shade200),
+            const Divider(height: 1, color: AppTheme.borderLight),
 
             // ── Baris data ───────────────────────────────
             Expanded(
@@ -384,12 +396,12 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                     final item = e.value;
                     final rowColor = i % 2 == 0
                         ? Colors.white
-                        : const Color(0xFFF5F6FF);
+                        : AppTheme.primary.withOpacity(0.015);
                     return Container(
                       color: rowColor,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 10,
+                        vertical: 12,
                       ),
                       child: Row(
                         children: [
@@ -399,15 +411,15 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                             child: Container(
                               width: 28,
                               height: 28,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE8EAF6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.08),
                                 shape: BoxShape.circle,
                               ),
                               alignment: Alignment.center,
                               child: Text(
                                 "${i + 1}",
                                 style: const TextStyle(
-                                  color: Color(0xFF3F51B5),
+                                  color: AppTheme.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -422,8 +434,8 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                               item['nim'] ?? '',
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Color(0xFF3F51B5),
-                                fontWeight: FontWeight.w600,
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
                             ),
@@ -435,24 +447,22 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                               children: [
                                 CircleAvatar(
                                   radius: 13,
-                                  backgroundColor: const Color(
-                                    0xFF3F51B5,
-                                  ).withOpacity(0.12),
+                                  backgroundColor: AppTheme.primary.withOpacity(0.12),
                                   child: Text(
                                     (item['nama'] ?? '?')[0].toUpperCase(),
                                     style: const TextStyle(
-                                      color: Color(0xFF3F51B5),
+                                      color: AppTheme.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 7),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     item['nama'] ?? '',
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textDark),
                                   ),
                                 ),
                               ],
@@ -473,7 +483,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                               item['alamat'] ?? '',
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
-                              style: const TextStyle(fontSize: 13),
+                              style: const TextStyle(fontSize: 13, color: AppTheme.textDark),
                             ),
                           ),
                           // Username
@@ -482,9 +492,9 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                             child: Text(
                               item['username'] ?? '',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey.shade700,
+                                color: AppTheme.textLight,
                               ),
                             ),
                           ),
@@ -501,10 +511,10 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                                     "Edit",
                                     () => showEditDialog(item),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 8),
                                   _aksiBtn(
                                     Icons.delete_outline,
-                                    Colors.red,
+                                    AppTheme.accent,
                                     "Hapus",
                                     () => hapus(item['id'].toString()),
                                   ),
@@ -529,17 +539,14 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
   // ════════════════════════════════════════════════════
   Widget _buildCardList(List<dynamic> data, bool isAdmin) {
     return ListView.builder(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       itemCount: data.length,
       itemBuilder: (_, i) {
         final item = data[i];
         return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -547,11 +554,11 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF3F51B5),
+                      backgroundColor: AppTheme.primary.withOpacity(0.12),
                       child: Text(
                         (item['nama'] ?? '?')[0].toUpperCase(),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -563,6 +570,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
+                          color: AppTheme.textDark,
                         ),
                       ),
                     ),
@@ -573,21 +581,22 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
                         "Edit",
                         () => showEditDialog(item),
                       ),
+                      const SizedBox(width: 4),
                       _aksiBtn(
                         Icons.delete_outline,
-                        Colors.red,
+                        AppTheme.accent,
                         "Hapus",
                         () => hapus(item['id'].toString()),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 10),
-                _cardRow(Icons.badge, "NIM", item['nim'] ?? ''),
-                _cardRow(Icons.school, "Jurusan", item['jurusan'] ?? ''),
+                const SizedBox(height: 12),
+                _cardRow(Icons.badge_outlined, "NIM", item['nim'] ?? ''),
+                _cardRow(Icons.school_outlined, "Jurusan", item['jurusan'] ?? ''),
                 _cardRow(Icons.home_outlined, "Alamat", item['alamat'] ?? ''),
                 _cardRow(
-                  Icons.account_circle,
+                  Icons.account_circle_outlined,
                   "Username",
                   item['username'] ?? '',
                 ),
@@ -604,7 +613,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withOpacity(0.18),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -614,7 +623,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
           const SizedBox(width: 6),
           Text(
             "$val $label",
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -627,17 +636,17 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF3F51B5).withOpacity(0.1),
+          color: AppTheme.secondary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF3F51B5).withOpacity(0.3)),
+          border: Border.all(color: AppTheme.secondary.withOpacity(0.3)),
         ),
         child: Text(
           jurusan,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            color: Color(0xFF3F51B5),
+            color: AppTheme.secondary,
             fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -652,7 +661,6 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(6),
-          margin: const EdgeInsets.only(left: 4),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -669,17 +677,17 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 15, color: const Color(0xFF3F51B5)),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: AppTheme.primary),
+          const SizedBox(width: 8),
           SizedBox(
-            width: 68,
+            width: 72,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
             ),
           ),
-          const Text(": ", style: TextStyle(color: Colors.grey, fontSize: 12)),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
+          const Text(": ", style: TextStyle(color: AppTheme.textLight, fontSize: 12)),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13, color: AppTheme.textDark))),
         ],
       ),
     );
@@ -710,10 +718,7 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
         controller: c,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: const Color(0xFF3F51B5)),
-          border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
+          prefixIcon: Icon(icon, color: AppTheme.primary),
         ),
       ),
     );
@@ -731,18 +736,14 @@ class _DataMahasiswaPageState extends State<DataMahasiswaPage> {
         maxLines: 2,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: const Color(0xFF3F51B5)),
+          prefixIcon: Icon(icon, color: AppTheme.primary),
           alignLabelWithHint: true,
-          border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
         ),
       ),
     );
   }
 }
 
-// Widget kecil untuk header kolom tabel
 class _H extends StatelessWidget {
   final String text;
   const _H(this.text);
@@ -752,7 +753,7 @@ class _H extends StatelessWidget {
       text,
       style: const TextStyle(
         fontWeight: FontWeight.bold,
-        color: Color(0xFF1A237E),
+        color: AppTheme.primary,
         fontSize: 13,
       ),
     );

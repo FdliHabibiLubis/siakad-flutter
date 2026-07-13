@@ -26,6 +26,7 @@ class _DosenDashboardState extends State<DosenDashboard> {
   }
 
   Future<void> _loadDosenData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final client = SupabaseConfig.client;
@@ -60,114 +61,74 @@ class _DosenDashboardState extends State<DosenDashboard> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal memuat dashboard dosen: $e"), backgroundColor: Colors.red),
-        );
+        AppTheme.showSnackBar(context, "Gagal memuat dashboard dosen: $e", backgroundColor: Colors.red);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final nidn = _dosenDetails?['nidn'] ?? '-';
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard Dosen"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDosenData,
-            tooltip: "Muat Ulang",
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.accent),
-            onPressed: widget.onLogout,
-            tooltip: "Logout",
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.bgLight,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadDosenData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWelcomeCard(),
-                    const SizedBox(height: 24),
-                    
-                    const Text(
-                      "Mata Kuliah Yang Diampu",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildClassesList(),
-                    const SizedBox(height: 28),
-                    
-                    const Text(
-                      "Pengumuman Akademik Umum",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildAnnouncementsList(),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _buildWelcomeCard() {
-    final nidn = _dosenDetails?['nidn'] ?? '-';
-    return AppTheme.buildGradientCard(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Selamat Datang, ${widget.profile['nama']}!",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "NIDN: $nidn",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Pilih kelas Anda di bawah untuk mengelola materi, tugas, pengumuman kelas, dan input nilai.",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.co_present_outlined, color: Colors.white, size: 36),
-            )
-          ],
-        ),
-      ),
+               onRefresh: _loadDosenData,
+               child: SingleChildScrollView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     // Academic Header Gradient
+                     AppTheme.buildHeaderGradient(
+                       context: context,
+                       title: "Selamat Datang, ${widget.profile['nama']}!",
+                       subtitle: "Dosen Pengampu",
+                       metaText: "NIDN: $nidn",
+                       badgeText: "Dashboard Dosen",
+                       icon: Icons.co_present_outlined,
+                       actions: [
+                         IconButton(
+                           icon: const Icon(Icons.refresh, color: Colors.white),
+                           onPressed: _loadDosenData,
+                           tooltip: "Muat Ulang",
+                         ),
+                         IconButton(
+                           icon: const Icon(Icons.logout, color: Colors.white),
+                           onPressed: widget.onLogout,
+                           tooltip: "Logout",
+                         ),
+                       ],
+                     ),
+                     
+                     Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           const Text(
+                             "Mata Kuliah Yang Diampu",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildClassesList(),
+                           const SizedBox(height: 28),
+                           
+                           const Text(
+                             "Pengumuman Akademik Umum",
+                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                           ),
+                           const SizedBox(height: 12),
+                           _buildAnnouncementsList(),
+                         ],
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
+             ),
     );
   }
 
@@ -193,70 +154,42 @@ class _DosenDashboardState extends State<DosenDashboard> {
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _kelasList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final k = _kelasList[index];
         final mk = k['mata_kuliah'] ?? {};
         final j = k['jadwal'];
         
         String scheduleText = "Belum dijadwalkan";
+        String? roomText;
         if (j != null) {
           final timeStr = "${j['jam_mulai'].substring(0, 5)} - ${j['jam_selesai'].substring(0, 5)}";
-          scheduleText = "${j['hari']}, $timeStr (${(j['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (j['ruangan'] ?? '') : "Ruang ${j['ruangan'] ?? ''}"})";
+          scheduleText = "${j['hari']}, $timeStr";
+          roomText = j['ruangan'] != null ? "Ruangan ${j['ruangan']}" : null;
         }
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+        return AppTheme.buildCourseCard(
+          code: mk['kode'] ?? '-',
+          name: mk['nama'] ?? '-',
+          teacher: "Kelas: ${k['nama']} (Kuota: ${k['kuota']} Mahasiswa)",
+          schedule: scheduleText,
+          sks: (mk['sks'] as num?)?.toInt() ?? 0,
+          room: roomText,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ClassDetailPage(
+                  kelasItem: k,
+                  dosenId: _dosenDetails!['id'],
+                ),
               ),
-              child: const Icon(Icons.school, color: AppTheme.primary),
-            ),
-            title: Text(
-              "[${mk['kode'] ?? ''}] ${mk['nama'] ?? ''}",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text("Kelas: ${k['nama']} | Kuota: ${k['kuota']} Mahasiswa"),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 12, color: AppTheme.textLight),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        scheduleText,
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ClassDetailPage(
-                    kelasItem: k,
-                    dosenId: _dosenDetails!['id'],
-                  ),
-                ),
-              );
-            },
-          ),
+            );
+          },
         );
       },
     );
@@ -264,8 +197,8 @@ class _DosenDashboardState extends State<DosenDashboard> {
 
   Widget _buildAnnouncementsList() {
     if (_announcements.isEmpty) {
-      return Card(
-        child: const Padding(
+      return const Card(
+        child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Center(
             child: Text("Tidak ada pengumuman akademik umum", style: TextStyle(color: AppTheme.textLight, fontSize: 13)),
@@ -274,16 +207,17 @@ class _DosenDashboardState extends State<DosenDashboard> {
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _announcements.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ann = _announcements[index];
         final date = DateTime.parse(ann['created_at']).toLocal();
         final dateString = "${date.day}/${date.month}/${date.year}";
         return Card(
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
