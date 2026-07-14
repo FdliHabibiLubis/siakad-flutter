@@ -196,11 +196,15 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                       if (isMhs) ...[
                         DropdownButtonFormField<String>(
                           value: prodiId,
+                          isExpanded: true,
                           decoration: const InputDecoration(labelText: "Program Studi"),
                           items: _prodiList.map((prodi) {
                             return DropdownMenuItem(
                               value: prodi['id'].toString(),
-                              child: Text("${prodi['kode']} - ${prodi['nama']}"),
+                              child: Text(
+                                "${prodi['kode']} - ${prodi['nama']}",
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -302,11 +306,15 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                       if (isMhs) ...[
                         DropdownButtonFormField<String>(
                           value: prodiId,
+                          isExpanded: true,
                           decoration: const InputDecoration(labelText: "Program Studi"),
                           items: _prodiList.map((prodi) {
                             return DropdownMenuItem(
                               value: prodi['id'].toString(),
-                              child: Text("${prodi['kode']} - ${prodi['nama']}"),
+                              child: Text(
+                                "${prodi['kode']} - ${prodi['nama']}",
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {

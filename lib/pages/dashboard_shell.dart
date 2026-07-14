@@ -4,6 +4,9 @@ import '../utils/supabase_config.dart';
 import 'login_page.dart';
 import 'admin/admin_dashboard.dart';
 import 'dosen/dosen_dashboard.dart';
+import 'dosen/dosen_jadwal_page.dart';
+import 'dosen/dosen_nilai_page.dart';
+import 'dosen/dosen_profile_page.dart';
 import 'mahasiswa/mahasiswa_dashboard.dart';
 import 'mahasiswa/krs_page.dart';
 import 'mahasiswa/khs_page.dart';
@@ -25,11 +28,39 @@ class _DashboardShellState extends State<DashboardShell> {
   Map<String, dynamic>? _studentDetails;
   Map<String, dynamic>? _activeSemester;
 
+  bool _isDosenLoading = false;
+  Map<String, dynamic>? _dosenDetails;
+
   @override
   void initState() {
     super.initState();
     if (widget.role == 'mahasiswa') {
       _loadMahasiswaData();
+    } else if (widget.role == 'dosen') {
+      _loadDosenData();
+    }
+  }
+
+  Future<void> _loadDosenData() async {
+    setState(() => _isDosenLoading = true);
+    try {
+      final user = SupabaseConfig.currentUser;
+      if (user != null) {
+        final dsn = await SupabaseConfig.client
+            .from('dosen')
+            .select('*, users(nama, email)')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        setState(() {
+          _dosenDetails = dsn;
+          _isDosenLoading = false;
+        });
+      } else {
+        setState(() => _isDosenLoading = false);
+      }
+    } catch (_) {
+      setState(() => _isDosenLoading = false);
     }
   }
 
@@ -191,13 +222,100 @@ class _DashboardShellState extends State<DashboardShell> {
     );
   }
 
+  Widget _buildDosenShell() {
+    if (_isDosenLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final List<Widget> pages = [
+      DosenDashboard(profile: widget.profile, onLogout: _logout),
+      if (_dosenDetails != null)
+        DosenJadwalPage(dosenDetails: _dosenDetails!)
+      else
+        const Scaffold(
+          body: Center(
+            child: Text("Data Jadwal Mengajar tidak tersedia."),
+          ),
+        ),
+      if (_dosenDetails != null)
+        DosenNilaiPage(dosenDetails: _dosenDetails!)
+      else
+        const Scaffold(
+          body: Center(
+            child: Text("Data Input Nilai tidak tersedia."),
+          ),
+        ),
+      if (_dosenDetails != null)
+        DosenProfilePage(dosenDetails: _dosenDetails!, isTab: true)
+      else
+        const Scaffold(
+          body: Center(
+            child: Text("Data profil tidak tersedia."),
+          ),
+        ),
+    ];
+
+    return Scaffold(
+      body: pages[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: AppTheme.borderLight, width: 1.0),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          elevation: 0,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppTheme.primary,
+          unselectedItemColor: AppTheme.textLight,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 11),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_outlined),
+              label: "Beranda",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_outlined),
+              activeIcon: Icon(Icons.calendar_today_outlined),
+              label: "Jadwal",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.grade_outlined),
+              activeIcon: Icon(Icons.grade_outlined),
+              label: "Beri Nilai",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person_outline),
+              label: "Profil",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     switch (widget.role) {
       case 'admin':
         return AdminDashboard(profile: widget.profile, onLogout: _logout);
       case 'dosen':
-        return DosenDashboard(profile: widget.profile, onLogout: _logout);
+        return _buildDosenShell();
       case 'mahasiswa':
         return _buildMahasiswaShell();
       default:

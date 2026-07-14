@@ -9,8 +9,14 @@ import 'submission_grading_page.dart';
 class ClassDetailPage extends StatefulWidget {
   final Map<String, dynamic> kelasItem;
   final String dosenId;
+  final int initialTabIndex;
 
-  const ClassDetailPage({super.key, required this.kelasItem, required this.dosenId});
+  const ClassDetailPage({
+    super.key,
+    required this.kelasItem,
+    required this.dosenId,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<ClassDetailPage> createState() => _ClassDetailPageState();
@@ -29,7 +35,11 @@ class _ClassDetailPageState extends State<ClassDetailPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(
+      length: 5,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _loadAllClassData();
   }
 

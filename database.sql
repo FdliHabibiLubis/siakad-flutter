@@ -9,7 +9,7 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP TRIGGER IF EXISTS on_auth_user_deleted ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
 DROP FUNCTION IF EXISTS public.handle_delete_user();
-DROP FUNCTION IF EXISTS public.get_user_role();
+DROP FUNCTION IF EXISTS public.get_user_role() CASCADE;
 DROP FUNCTION IF EXISTS public.admin_create_user(text, text, text, text, text, uuid, int, text);
 
 DROP TABLE IF EXISTS public.pengumuman CASCADE;
@@ -272,7 +272,7 @@ BEGIN
   END IF;
 
   v_user_id := gen_random_uuid();
-  v_encrypted_pw := crypt(p_password, gen_salt('bf'));
+  v_encrypted_pw := extensions.crypt(p_password, extensions.gen_salt('bf'));
 
   -- Insert into auth.users
   INSERT INTO auth.users (
@@ -283,7 +283,7 @@ BEGIN
     email,
     encrypted_password,
     email_confirmed_at,
-    confirmed_at,
+    phone_confirmed_at,
     recovery_sent_at,
     last_sign_in_at,
     raw_app_meta_data,
@@ -564,9 +564,82 @@ BEGIN
 
   UPDATE auth.users
   SET 
-    encrypted_password = crypt(p_new_password, gen_salt('bf')),
+    encrypted_password = extensions.crypt(p_new_password, extensions.gen_salt('bf')),
     updated_at = now()
   WHERE id = p_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ══════════════════════════════════════════════
+-- 7. SEED ADMIN USER
+-- ══════════════════════════════════════════════
+DO $$
+DECLARE
+  v_admin_id uuid := 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a10';
+  v_admin_email text := 'admin@gmail.com';
+  v_admin_pw text := 'admin123';
+  v_encrypted_pw text;
+BEGIN
+  -- Clean up existing admin if any, so that everything is fresh and the trigger fires!
+  DELETE FROM auth.users WHERE email = v_admin_email;
+
+  v_encrypted_pw := extensions.crypt(v_admin_pw, extensions.gen_salt('bf'));
+
+  -- Insert into auth.users
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    phone_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    v_admin_id,
+    'authenticated',
+    'authenticated',
+    v_admin_email,
+    v_encrypted_pw,
+    now(),
+    now(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{"role": "admin", "nama": "Administrator Utama"}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  );
+
+  -- Insert into auth.identities
+  INSERT INTO auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    provider_id,
+    last_sign_in_at,
+    created_at,
+    updated_at
+  ) VALUES (
+    gen_random_uuid(),
+    v_admin_id,
+    json_build_object('sub', v_admin_id, 'email', v_admin_email),
+    'email',
+    v_admin_id::text,
+    null,
+    now(),
+    now()
+  );
+END $$;
