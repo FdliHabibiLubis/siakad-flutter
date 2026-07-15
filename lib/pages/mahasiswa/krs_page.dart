@@ -41,7 +41,20 @@ class _KrsPageState extends State<KrsPage> {
           .select('*, kelas(*, mata_kuliah(*), dosen(users(nama))), semester(*)')
           .eq('semester_id', semId);
 
-      _availableJadwal = List<Map<String, dynamic>>.from(schedules);
+      final studentProdiId = widget.studentDetails['program_studi_id'] ?? 
+                             widget.studentDetails['program_studi']?['id'];
+      final allSchedules = List<Map<String, dynamic>>.from(schedules);
+
+      _availableJadwal = allSchedules.where((j) {
+        final mk = j['kelas']?['mata_kuliah'];
+        if (mk == null) return false;
+        final mkProdiId = mk['program_studi_id'] ?? mk['program_studi']?['id'];
+        
+        // If the course has no program studi, it is a general course (visible to all).
+        // Otherwise, it must match the student's program studi exactly.
+        if (mkProdiId == null) return true;
+        return mkProdiId == studentProdiId;
+      }).toList();
 
       // 2. Fetch existing KRS for student in this active semester
       final List<dynamic> existing = await client
@@ -236,7 +249,18 @@ class _KrsPageState extends State<KrsPage> {
                 // Available class list
                 Expanded(
                   child: _availableJadwal.isEmpty
-                      ? const Center(child: Text("Belum ada jadwal kuliah di semester aktif ini."))
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Text(
+                              widget.studentDetails['program_studi'] != null
+                                  ? "Belum ada jadwal kuliah untuk program studi ${widget.studentDetails['program_studi']['nama']} di semester aktif ini."
+                                  : "Belum ada jadwal kuliah di semester aktif ini.",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppTheme.textLight),
+                            ),
+                          ),
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _availableJadwal.length,
