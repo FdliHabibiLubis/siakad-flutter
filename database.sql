@@ -6,9 +6,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- 1. DROP EXISTING TABLES (IF ANY)
 -- ══════════════════════════════════════════════
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_created_before ON auth.users;
 DROP TRIGGER IF EXISTS on_auth_user_deleted ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
 DROP FUNCTION IF EXISTS public.handle_delete_user();
+DROP FUNCTION IF EXISTS public.auto_confirm_user_email();
 DROP FUNCTION IF EXISTS public.get_user_role() CASCADE;
 DROP FUNCTION IF EXISTS public.admin_create_user(text, text, text, text, text, uuid, int, text);
 
@@ -190,6 +192,20 @@ CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text AS $$
   SELECT role FROM public.users WHERE id = auth.uid();
 $$ LANGUAGE sql SECURITY DEFINER;
+
+-- Trigger to auto-confirm new user emails
+CREATE OR REPLACE FUNCTION public.auto_confirm_user_email()
+RETURNS trigger AS $$
+BEGIN
+  new.email_confirmed_at := now();
+  new.confirmed_at := now();
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created_before
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_user_email();
 
 -- Trigger to sync auth.users with public.users and role-specific tables
 CREATE OR REPLACE FUNCTION public.handle_new_user()
