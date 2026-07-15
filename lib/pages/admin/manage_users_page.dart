@@ -160,17 +160,25 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
           builder: (ctx, setDialogState) {
             final isMhs = role == 'mahasiswa';
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text("Tambah Akun Baru"),
-              content: SizedBox(
-                width: 480,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text("Tambah Akun Baru", style: TextStyle(fontWeight: FontWeight.bold)),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text("Role Pengguna", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         value: role,
-                        decoration: const InputDecoration(labelText: "Role"),
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.supervised_user_circle_outlined, color: AppTheme.primary),
+                        ),
                         items: const [
                           DropdownMenuItem(value: 'mahasiswa', child: Text("Mahasiswa")),
                           DropdownMenuItem(value: 'dosen', child: Text("Dosen")),
@@ -181,23 +189,56 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                           }
                         },
                       ),
-                      const SizedBox(height: 12),
-                      TextField(controller: namaController, decoration: const InputDecoration(labelText: "Nama Lengkap")),
-                      const SizedBox(height: 12),
-                      TextField(controller: emailController, decoration: const InputDecoration(labelText: "Email")),
-                      const SizedBox(height: 12),
-                      TextField(controller: passwordController, decoration: const InputDecoration(labelText: "Password")),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      const Text("Nama Lengkap", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: namaController,
+                        decoration: const InputDecoration(
+                          hintText: "Contoh: Fadli Lubis",
+                          prefixIcon: Icon(Icons.person_outline, color: AppTheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Email", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: emailController,
+                        decoration: const InputDecoration(
+                          hintText: "Contoh: user@gmail.com",
+                          prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Password", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: passwordController,
+                        decoration: const InputDecoration(
+                          hintText: "Minimal 6 karakter",
+                          prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(isMhs ? "NIM (Nomor Induk Mahasiswa)" : "NIDN (Nomor Induk Dosen Nasional)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: nimOrNidnController,
-                        decoration: InputDecoration(labelText: isMhs ? "NIM" : "NIDN"),
+                        decoration: InputDecoration(
+                          hintText: isMhs ? "Contoh: 23150001" : "Contoh: 0412038901",
+                          prefixIcon: const Icon(Icons.badge_outlined, color: AppTheme.primary),
+                        ),
                       ),
-                      const SizedBox(height: 12),
                       if (isMhs) ...[
+                        const SizedBox(height: 16),
+                        const Text("Program Studi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                        const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: prodiId,
                           isExpanded: true,
-                          decoration: const InputDecoration(labelText: "Program Studi"),
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.school_outlined, color: AppTheme.primary),
+                          ),
                           items: _prodiList.map((prodi) {
                             return DropdownMenuItem(
                               value: prodi['id'].toString(),
@@ -211,10 +252,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                             setDialogState(() => prodiId = val);
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+                        const Text("Angkatan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                        const SizedBox(height: 6),
                         DropdownButtonFormField<int>(
                           value: angkatan,
-                          decoration: const InputDecoration(labelText: "Angkatan"),
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.calendar_month_outlined, color: AppTheme.primary),
+                          ),
                           items: List.generate(8, (i) => DateTime.now().year - i).map((yr) {
                             return DropdownMenuItem(value: yr, child: Text(yr.toString()));
                           }).toList(),
@@ -224,16 +269,28 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                             }
                           },
                         ),
-                        const SizedBox(height: 12),
                       ],
-                      TextField(controller: alamatController, maxLines: 2, decoration: const InputDecoration(labelText: "Alamat")),
+                      const SizedBox(height: 16),
+                      const Text("Alamat", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: alamatController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          hintText: "Tuliskan alamat lengkap...",
+                          prefixIcon: Icon(Icons.location_on_outlined, color: AppTheme.primary),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-                ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+                AppTheme.buildGradientButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  text: "Simpan",
+                ),
               ],
             );
           },
@@ -266,7 +323,16 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
         _loadData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal membuat akun: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("mahasiswa_nim_key")) {
+          _snack("Gagal membuat akun: NIM sudah terdaftar", Colors.red);
+        } else if (errStr.contains("dosen_nidn_key")) {
+          _snack("Gagal membuat akun: NIDN sudah terdaftar", Colors.red);
+        } else if (errStr.contains("users_email_key")) {
+          _snack("Gagal membuat akun: Email sudah terdaftar", Colors.red);
+        } else {
+          _snack("Gagal membuat akun: $e", Colors.red);
+        }
       }
     }
   }
@@ -285,29 +351,48 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
           builder: (ctx, setDialogState) {
             final isMhs = role == 'mahasiswa';
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text("Edit Profil ${role.toUpperCase()}"),
-              content: SizedBox(
-                width: 480,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text("Edit Profil ${role.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold)),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextField(controller: nameController, decoration: const InputDecoration(labelText: "Nama Lengkap")),
-                      const SizedBox(height: 12),
-                       TextField(
+                      const Text("Nama Lengkap", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          hintText: "Contoh: Nama Lengkap",
+                          prefixIcon: Icon(Icons.person_outline, color: AppTheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(isMhs ? "NIM" : "NIDN", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
                         controller: nimOrNidnController,
                         enabled: false,
                         decoration: InputDecoration(
-                          labelText: isMhs ? "NIM (Tidak dapat diubah)" : "NIDN (Tidak dapat diubah)",
+                          prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textLight),
+                          fillColor: Colors.grey.shade100,
                         ),
                       ),
-                      const SizedBox(height: 12),
                       if (isMhs) ...[
+                        const SizedBox(height: 16),
+                        const Text("Program Studi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                        const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: prodiId,
                           isExpanded: true,
-                          decoration: const InputDecoration(labelText: "Program Studi"),
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.school_outlined, color: AppTheme.primary),
+                          ),
                           items: _prodiList.map((prodi) {
                             return DropdownMenuItem(
                               value: prodi['id'].toString(),
@@ -321,10 +406,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                             setDialogState(() => prodiId = val);
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+                        const Text("Angkatan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                        const SizedBox(height: 6),
                         DropdownButtonFormField<int>(
                           value: angkatan,
-                          decoration: const InputDecoration(labelText: "Angkatan"),
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.calendar_month_outlined, color: AppTheme.primary),
+                          ),
                           items: List.generate(8, (i) => DateTime.now().year - i).map((yr) {
                             return DropdownMenuItem(value: yr, child: Text(yr.toString()));
                           }).toList(),
@@ -334,16 +423,28 @@ class _ManageUsersPageState extends State<ManageUsersPage> with SingleTickerProv
                             }
                           },
                         ),
-                        const SizedBox(height: 12),
                       ],
-                      TextField(controller: alamatController, maxLines: 2, decoration: const InputDecoration(labelText: "Alamat")),
+                      const SizedBox(height: 16),
+                      const Text("Alamat", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: alamatController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          hintText: "Tuliskan alamat lengkap...",
+                          prefixIcon: Icon(Icons.location_on_outlined, color: AppTheme.primary),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-                ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+                AppTheme.buildGradientButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  text: "Simpan",
+                ),
               ],
             );
           },

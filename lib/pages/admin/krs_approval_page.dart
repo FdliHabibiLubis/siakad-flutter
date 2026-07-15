@@ -62,17 +62,17 @@ class _KrsApprovalPageState extends State<KrsApprovalPage> {
     final action = status == 'disetujui' ? "Menyetujui" : "Menolak";
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text("Konfirmasi $action KRS"),
         content: Text("Yakin ingin mengubah status KRS mahasiswa ini menjadi '$status'?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text("Batal")),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: status == 'disetujui' ? Colors.green : AppTheme.accent,
               foregroundColor: Colors.white,
             ),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogCtx, true),
             child: Text(status == 'disetujui' ? "Setujui" : "Tolak"),
           )
         ],
@@ -117,73 +117,124 @@ class _KrsApprovalPageState extends State<KrsApprovalPage> {
   }
 
   void _showDetailDialog(String mName, String nim, List<Map<String, dynamic>> items) {
-    int totalSks = 0;
-    for (var it in items) {
-      totalSks += (it['jadwal']['kelas']['mata_kuliah']['sks'] as num).toInt();
-    }
+    try {
+      int totalSks = 0;
+      for (var it in items) {
+        final j = it['jadwal'];
+        if (j == null) continue;
+        final k = j['kelas'];
+        if (k == null) continue;
+        final mk = k['mata_kuliah'];
+        if (mk == null) continue;
+        final sksVal = mk['sks'];
+        if (sksVal != null) {
+          totalSks += (sksVal as num).toInt();
+        }
+      }
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(mName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            Text("NIM: $nim | Total SKS: $totalSks SKS", style: const TextStyle(fontSize: 13, color: AppTheme.textLight)),
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(mName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("NIM: $nim | Total SKS: $totalSks SKS", style: const TextStyle(fontSize: 13, color: AppTheme.textLight)),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 480,
+                maxHeight: MediaQuery.of(dialogContext).size.height * 0.5,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: items.length,
+                itemBuilder: (ctx, idx) {
+                  final it = items[idx];
+                  final j = it['jadwal'];
+                  if (j == null) return const SizedBox();
+                  final k = j['kelas'];
+                  if (k == null) return const SizedBox();
+                  final mk = k['mata_kuliah'];
+                  if (mk == null) return const SizedBox();
+                  
+                  String timeStr = "";
+                  if (j['jam_mulai'] != null && j['jam_selesai'] != null) {
+                    final start = j['jam_mulai'].toString();
+                    final end = j['jam_selesai'].toString();
+                    final s = start.length >= 5 ? start.substring(0, 5) : start;
+                    final e = end.length >= 5 ? end.substring(0, 5) : end;
+                    timeStr = "$s - $e";
+                  }
+                  
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("[${mk['kode'] ?? ''}] ${mk['nama'] ?? ''}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 4),
+                          Text("Kelas: ${k['nama'] ?? ''} | SKS: ${mk['sks'] ?? ''}"),
+                          Text("Jadwal: ${j['hari'] ?? ''}, $timeStr (${(j['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (j['ruangan'] ?? '') : "Ruang ${j['ruangan'] ?? ''}"})", style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Tutup"),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    _processKrs(items.first['mahasiswa_id'], 'ditolak', items);
+                  },
+                  child: const Text("Tolak"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    _processKrs(items.first['mahasiswa_id'], 'disetujui', items);
+                  },
+                  child: const Text("Setujui"),
+                ),
+              ],
+            ),
           ],
         ),
-        content: SizedBox(
-          width: 480,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: items.length,
-            itemBuilder: (ctx, idx) {
-              final it = items[idx];
-              final j = it['jadwal'];
-              final k = j['kelas'];
-              final mk = k['mata_kuliah'];
-              final timeStr = "${j['jam_mulai'].substring(0, 5)} - ${j['jam_selesai'].substring(0, 5)}";
-              
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("[${mk['kode']}] ${mk['nama']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      const SizedBox(height: 4),
-                      Text("Kelas: ${k['nama']} | SKS: ${mk['sks']}"),
-                      Text("Jadwal: ${j['hari']}, $timeStr (${(j['ruangan'] ?? '').toString().toLowerCase().contains('ruang') ? (j['ruangan'] ?? '') : "Ruang ${j['ruangan'] ?? ''}"})", style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accent, foregroundColor: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-              _processKrs(items.first['mahasiswa_id'], 'ditolak', items);
-            },
-            child: const Text("Tolak KRS"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-              _processKrs(items.first['mahasiswa_id'], 'disetujui', items);
-            },
-            child: const Text("Setujui KRS"),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint("KRS_DIALOG_ERROR: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal memproses data: $e"), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override

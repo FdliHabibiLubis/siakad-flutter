@@ -27,6 +27,12 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient buttonGradient = LinearGradient(
+    colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)], // Vibrant Blue Gradient
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -111,7 +117,54 @@ class AppTheme {
     );
   }
 
-  // REUSABLE COMPONENTS
+  // Gradient Button with shadow
+  static Widget buildGradientButton({
+    required VoidCallback onPressed,
+    required String text,
+    IconData? icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: buttonGradient,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 18, color: Colors.white),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  text,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   // 1. Header Gradient Widget
   static Widget buildHeaderGradient({

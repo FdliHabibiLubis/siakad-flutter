@@ -80,18 +80,47 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(item == null ? "Tambah Program Studi" : "Edit Program Studi"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: kodeController, decoration: const InputDecoration(labelText: "Kode Prodi (e.g. TI)")),
-            const SizedBox(height: 12),
-            TextField(controller: namaController, decoration: const InputDecoration(labelText: "Nama Prodi (e.g. Teknik Informatika)")),
-          ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(item == null ? "Tambah Program Studi" : "Edit Program Studi", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 450,
+            maxHeight: MediaQuery.of(context).size.height * 0.52,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Kode Prodi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: kodeController,
+                  decoration: const InputDecoration(
+                    hintText: "Contoh: TI",
+                    prefixIcon: Icon(Icons.code, color: AppTheme.primary),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text("Nama Prodi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: namaController,
+                  decoration: const InputDecoration(
+                    hintText: "Contoh: Teknik Informatika",
+                    prefixIcon: Icon(Icons.badge_outlined, color: AppTheme.primary),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Simpan")),
+          AppTheme.buildGradientButton(
+            onPressed: () => Navigator.pop(context, true),
+            text: "Simpan",
+          ),
         ],
       ),
     );
@@ -116,7 +145,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menyimpan: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("program_studi_kode_key")) {
+          _snack("Gagal menyimpan: Kode Program Studi sudah digunakan", Colors.red);
+        } else {
+          _snack("Gagal menyimpan: $e", Colors.red);
+        }
       }
     }
   }
@@ -142,7 +176,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         await SupabaseConfig.client.from('program_studi').delete().eq('id', id);
         _loadAllData();
       } catch (e) {
-        _snack("Gagal menghapus: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("foreign key constraint") || errStr.contains("violates foreign key")) {
+          _snack("Gagal menghapus: Program Studi sedang digunakan oleh data lain", Colors.red);
+        } else {
+          _snack("Gagal menghapus: $e", Colors.red);
+        }
       }
     }
   }
@@ -158,22 +197,52 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(item == null ? "Tambah Semester" : "Edit Semester"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: namaController, decoration: const InputDecoration(labelText: "Nama Semester (e.g. Ganjil 2026/2027)")),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                title: const Text("Status Aktif"),
-                value: status,
-                onChanged: (val) => setDialogState(() => status = val),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(item == null ? "Tambah Semester" : "Edit Semester", style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Nama Semester", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: namaController,
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: Semester Ganjil 2026/2027",
+                      prefixIcon: Icon(Icons.calendar_today, color: AppTheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: SwitchListTile(
+                      title: const Text("Status Aktif", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                      subtitle: const Text("Jadikan semester ini sebagai semester aktif utama", style: TextStyle(fontSize: 11)),
+                      value: status,
+                      activeColor: AppTheme.primary,
+                      onChanged: (val) => setDialogState(() => status = val),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+            AppTheme.buildGradientButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              text: "Simpan",
+            ),
           ],
         ),
       ),
@@ -209,7 +278,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menyimpan: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("semester_nama_key")) {
+          _snack("Gagal menyimpan: Nama Semester sudah digunakan", Colors.red);
+        } else {
+          _snack("Gagal menyimpan: $e", Colors.red);
+        }
       }
     }
   }
@@ -228,37 +302,73 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(item == null ? "Tambah Mata Kuliah" : "Edit Mata Kuliah"),
-          content: SizedBox(
-            width: 450,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(item == null ? "Tambah Mata Kuliah" : "Edit Mata Kuliah", style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: kodeController, decoration: const InputDecoration(labelText: "Kode MK")),
-                  const SizedBox(height: 12),
-                  TextField(controller: namaController, decoration: const InputDecoration(labelText: "Nama Mata Kuliah")),
-                  const SizedBox(height: 12),
+                  const Text("Kode MK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: kodeController,
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: IF101",
+                      prefixIcon: Icon(Icons.code_outlined, color: AppTheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Nama Mata Kuliah", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: namaController,
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: Pemrograman Dasar",
+                      prefixIcon: Icon(Icons.book_outlined, color: AppTheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Jumlah SKS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<int>(
                     value: sks,
-                    decoration: const InputDecoration(labelText: "SKS"),
-                    items: [1, 2, 3, 4, 6].map((v) => DropdownMenuItem(value: v, child: Text("$v SKS"))).toList(),
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.star_outline, color: AppTheme.primary),
+                    ),
+                    items: [1, 2, 3, 4, 6].map((v) => DropdownMenuItem(value: v, child: Text("$v SKS", overflow: TextOverflow.ellipsis, maxLines: 1))).toList(),
                     onChanged: (val) {
                       if (val != null) setDialogState(() => sks = val);
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Program Studi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: prodiId,
-                    decoration: const InputDecoration(labelText: "Program Studi"),
-                    items: _prodiList.map((p) => DropdownMenuItem(value: p['id'].toString(), child: Text(p['nama']))).toList(),
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.school_outlined, color: AppTheme.primary),
+                    ),
+                    items: _prodiList.map((p) => DropdownMenuItem(value: p['id'].toString(), child: Text(p['nama'], overflow: TextOverflow.ellipsis, maxLines: 1))).toList(),
                     onChanged: (val) => setDialogState(() => prodiId = val),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Semester Target", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: semesterId,
-                    decoration: const InputDecoration(labelText: "Semester Target"),
-                    items: _semesterList.map((s) => DropdownMenuItem(value: s['id'].toString(), child: Text(s['nama']))).toList(),
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.calendar_month_outlined, color: AppTheme.primary),
+                    ),
+                    items: _semesterList.map((s) => DropdownMenuItem(value: s['id'].toString(), child: Text(s['nama'], overflow: TextOverflow.ellipsis, maxLines: 1))).toList(),
                     onChanged: (val) => setDialogState(() => semesterId = val),
                   ),
                 ],
@@ -267,7 +377,10 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+            AppTheme.buildGradientButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              text: "Simpan",
+            ),
           ],
         ),
       ),
@@ -295,7 +408,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menyimpan: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("mata_kuliah_kode_key")) {
+          _snack("Gagal menyimpan: Kode Mata Kuliah sudah digunakan", Colors.red);
+        } else {
+          _snack("Gagal menyimpan: $e", Colors.red);
+        }
       }
     }
   }
@@ -313,29 +431,59 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(item == null ? "Tambah Kelas Baru" : "Edit Kelas"),
-          content: SizedBox(
-            width: 450,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(item == null ? "Tambah Kelas Baru" : "Edit Kelas", style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: namaController, decoration: const InputDecoration(labelText: "Nama Kelas (e.g. TI-A)")),
-                  const SizedBox(height: 12),
-                  TextField(controller: kuotaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Kuota")),
-                  const SizedBox(height: 12),
+                  const Text("Nama Kelas", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: namaController,
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: TI-A",
+                      prefixIcon: Icon(Icons.meeting_room_outlined, color: AppTheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Kuota Mahasiswa", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: kuotaController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: 40",
+                      prefixIcon: Icon(Icons.people_alt_outlined, color: AppTheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Mata Kuliah", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: mkId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: "Mata Kuliah"),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.book_outlined, color: AppTheme.primary),
+                    ),
                     items: _matkulList.map((m) => DropdownMenuItem(value: m['id'].toString(), child: Text("[${m['kode']}] ${m['nama']}"))).toList(),
                     onChanged: (val) => setDialogState(() => mkId = val),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Dosen Pengampu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: dosenId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: "Dosen Pengampu"),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.person_outline, color: AppTheme.primary),
+                    ),
                     items: _dosenList.map((d) => DropdownMenuItem(value: d['id'].toString(), child: Text(d['users']['nama']))).toList(),
                     onChanged: (val) => setDialogState(() => dosenId = val),
                   ),
@@ -345,7 +493,10 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+            AppTheme.buildGradientButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              text: "Simpan",
+            ),
           ],
         ),
       ),
@@ -375,7 +526,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menyimpan kelas: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("kelas_nama_mata_kuliah_id_key")) {
+          _snack("Gagal menyimpan: Nama kelas untuk mata kuliah ini sudah digunakan", Colors.red);
+        } else {
+          _snack("Gagal menyimpan kelas: $e", Colors.red);
+        }
       }
     }
   }
@@ -403,17 +559,26 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(item == null ? "Buat Jadwal Kuliah" : "Edit Jadwal"),
-          content: SizedBox(
-            width: 450,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(item == null ? "Buat Jadwal Kuliah" : "Edit Jadwal", style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text("Kelas (Mata Kuliah & Dosen)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: kelasId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: "Kelas (Mata Kuliah & Dosen)"),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.meeting_room_outlined, color: AppTheme.primary),
+                    ),
                     items: _kelasList.map((k) {
                       final mk = k['mata_kuliah'];
                       final d = k['dosen']['users']['nama'];
@@ -424,57 +589,95 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
                     }).toList(),
                     onChanged: (val) => setDialogState(() => kelasId = val),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Hari", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: hari,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: "Hari"),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.today_outlined, color: AppTheme.primary),
+                    ),
                     items: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
                         .map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
                     onChanged: (val) {
                       if (val != null) setDialogState(() => hari = val);
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Ruangan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: TextEditingController(text: ruangan),
-                    decoration: const InputDecoration(labelText: "Ruangan"),
+                    decoration: const InputDecoration(
+                      hintText: "Contoh: Ruang 101",
+                      prefixIcon: Icon(Icons.location_on_outlined, color: AppTheme.primary),
+                    ),
                     onChanged: (val) => ruangan = val,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text("Semester Akademik", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark)),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: semId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: "Semester Akademik"),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.calendar_month_outlined, color: AppTheme.primary),
+                    ),
                     items: _semesterList.map((s) => DropdownMenuItem(value: s['id'].toString(), child: Text(s['nama']))).toList(),
                     onChanged: (val) => setDialogState(() => semId = val),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Jam Mulai: ${start.format(ctx)}"),
-                      TextButton(
-                        onPressed: () async {
-                          final time = await showTimePicker(context: ctx, initialTime: start);
-                          if (time != null) setDialogState(() => start = time);
-                        },
-                        child: const Text("Pilih"),
-                      )
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Jam Selesai: ${end.format(ctx)}"),
-                      TextButton(
-                        onPressed: () async {
-                          final time = await showTimePicker(context: ctx, initialTime: end);
-                          if (time != null) setDialogState(() => end = time);
-                        },
-                        child: const Text("Pilih"),
-                      )
-                    ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time, size: 18, color: AppTheme.primary),
+                                const SizedBox(width: 8),
+                                Text("Jam Mulai: ${start.format(ctx)}", style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              ],
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final time = await showTimePicker(context: ctx, initialTime: start);
+                                if (time != null) setDialogState(() => start = time);
+                              },
+                              child: const Text("Pilih"),
+                            )
+                          ],
+                        ),
+                        const Divider(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time_filled, size: 18, color: AppTheme.primary),
+                                const SizedBox(width: 8),
+                                Text("Jam Selesai: ${end.format(ctx)}", style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              ],
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final time = await showTimePicker(context: ctx, initialTime: end);
+                                if (time != null) setDialogState(() => end = time);
+                              },
+                              child: const Text("Pilih"),
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -482,7 +685,10 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Simpan")),
+            AppTheme.buildGradientButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              text: "Simpan",
+            ),
           ],
         ),
       ),
@@ -515,7 +721,12 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menyimpan jadwal: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("jadwal_kelas_id_key")) {
+          _snack("Gagal menyimpan: Jadwal untuk kelas ini sudah ada", Colors.red);
+        } else {
+          _snack("Gagal menyimpan jadwal: $e", Colors.red);
+        }
       }
     }
   }
@@ -545,7 +756,17 @@ class _ManageAkademikPageState extends State<ManageAkademikPage> with SingleTick
         _loadAllData();
       } catch (e) {
         setState(() => _isLoading = false);
-        _snack("Gagal menghapus: $e", Colors.red);
+        final errStr = e.toString();
+        if (errStr.contains("foreign key constraint") || errStr.contains("violates foreign key")) {
+          String name = "Data";
+          if (table == 'semester') name = "Semester";
+          if (table == 'mata_kuliah') name = "Mata Kuliah";
+          if (table == 'kelas') name = "Kelas";
+          if (table == 'jadwal') name = "Jadwal";
+          _snack("Gagal menghapus: $name sedang digunakan oleh data lain", Colors.red);
+        } else {
+          _snack("Gagal menghapus: $e", Colors.red);
+        }
       }
     }
   }

@@ -145,9 +145,27 @@ class _RegisterPageState extends State<RegisterPage> {
         if (mounted) Navigator.pop(context);
       }
     } on AuthException catch (e) {
-      _snack(e.message, Colors.red);
+      final errStr = e.message.toLowerCase();
+      if (errStr.contains("mahasiswa_nim_key") || errStr.contains("nim") && errStr.contains("already exists")) {
+        _snack("Registrasi gagal: NIM sudah terdaftar", Colors.red);
+      } else if (errStr.contains("dosen_nidn_key") || errStr.contains("nidn") && errStr.contains("already exists")) {
+        _snack("Registrasi gagal: NIDN sudah terdaftar", Colors.red);
+      } else if (errStr.contains("database error saving new user")) {
+        _snack("Registrasi gagal: NIM/NIDN atau Email sudah terdaftar", Colors.red);
+      } else {
+        _snack(e.message, Colors.red);
+      }
     } catch (e) {
-      _snack("Gagal registrasi: $e", Colors.red);
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains("mahasiswa_nim_key") || errStr.contains("nim") && errStr.contains("already exists")) {
+        _snack("Registrasi gagal: NIM sudah terdaftar", Colors.red);
+      } else if (errStr.contains("dosen_nidn_key") || errStr.contains("nidn") && errStr.contains("already exists")) {
+        _snack("Registrasi gagal: NIDN sudah terdaftar", Colors.red);
+      } else if (errStr.contains("database error saving new user") || errStr.contains("duplicate key value")) {
+        _snack("Registrasi gagal: NIM/NIDN atau Email sudah terdaftar", Colors.red);
+      } else {
+        _snack("Gagal registrasi: $e", Colors.red);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
