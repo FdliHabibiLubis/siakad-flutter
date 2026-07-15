@@ -59,6 +59,29 @@ class _AdminAllGradesPageState extends State<AdminAllGradesPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredGrades;
+
+    // Group grades by student
+    final Map<String, Map<String, dynamic>> groupedMap = {};
+    for (final grade in filtered) {
+      final m = grade['mahasiswa'] ?? {};
+      final mId = m['id']?.toString() ?? '';
+      if (mId.isEmpty) continue;
+
+      if (!groupedMap.containsKey(mId)) {
+        groupedMap[mId] = {
+          'mahasiswa': m,
+          'nama': m['users']?['nama'] ?? '-',
+          'nim': m['nim'] ?? '',
+          'grades': <Map<String, dynamic>>[],
+        };
+      }
+      (groupedMap[mId]!['grades'] as List<Map<String, dynamic>>).add(grade);
+    }
+
+    final List<Map<String, dynamic>> groupedList = groupedMap.values.toList();
+    // Sort students alphabetically by name
+    groupedList.sort((a, b) => (a['nama'] as String).toLowerCase().compareTo((b['nama'] as String).toLowerCase()));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Seluruh Nilai Mahasiswa"),
@@ -78,72 +101,119 @@ class _AdminAllGradesPageState extends State<AdminAllGradesPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : filtered.isEmpty
+                : groupedList.isEmpty
                     ? const Center(child: Text("Tidak ada data nilai ditemukan"))
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: filtered.length,
+                        itemCount: groupedList.length,
                         itemBuilder: (context, index) {
-                          final item = filtered[index];
-                          final m = item['mahasiswa'];
-                          final nama = m['users']['nama'] ?? '-';
-                          final nim = m['nim'] ?? '';
-                          final mk = item['kelas']['mata_kuliah'];
-                          final mkName = mk['nama'] ?? '';
-                          
-                          final tugas = formatNilai(item['nilai_tugas']);
-                          final uts = formatNilai(item['nilai_uts']);
-                          final uas = formatNilai(item['nilai_uas']);
-                          final akhir = formatNilai(item['nilai_akhir']);
-                          final grade = item['grade'] ?? '-';
+                          final student = groupedList[index];
+                          final nama = student['nama'] ?? '-';
+                          final nim = student['nim'] ?? '';
+                          final studentGrades = student['grades'] as List<Map<String, dynamic>>;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          nama,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: grade == 'A' || grade == 'B' ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          "Grade: $grade",
-                                          style: TextStyle(
-                                            color: grade == 'A' || grade == 'B' ? Colors.green : Colors.orange,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                            child: Theme(
+                              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                              child: ExpansionTile(
+                                key: PageStorageKey("${student['mahasiswa']['id']}_${_searchQuery.isNotEmpty}"),
+                                initiallyExpanded: _searchQuery.isNotEmpty,
+                                leading: CircleAvatar(
+                                  backgroundColor: AppTheme.primary.withOpacity(0.1),
+                                  child: const Icon(Icons.person, color: AppTheme.primary),
+                                ),
+                                title: Text(
+                                  nama,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
+                                ),
+                                subtitle: Text("NIM: $nim", style: const TextStyle(color: AppTheme.textLight, fontSize: 13)),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  Text("NIM: $nim", style: const TextStyle(color: AppTheme.textLight, fontSize: 13)),
-                                  const SizedBox(height: 8),
-                                  Text("Mata Kuliah: ${mkName} (Kelas ${item['kelas']['nama']})", style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                                  const Divider(height: 24),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildScoreColumn("Tugas", tugas),
-                                      _buildScoreColumn("UTS", uts),
-                                      _buildScoreColumn("UAS", uas),
-                                      _buildScoreColumn("Nilai Akhir", akhir),
-                                    ],
-                                  )
-                                ],
+                                  child: Text(
+                                    "${studentGrades.length} MK",
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                                children: studentGrades.map((gradeItem) {
+                                  final mk = gradeItem['kelas']['mata_kuliah'];
+                                  final mkName = mk['nama'] ?? '';
+                                  final kelasName = gradeItem['kelas']['nama'] ?? '';
+                                  
+                                  final tugas = formatNilai(gradeItem['nilai_tugas']);
+                                  final uts = formatNilai(gradeItem['nilai_uts']);
+                                  final uas = formatNilai(gradeItem['nilai_uas']);
+                                  final akhir = formatNilai(gradeItem['nilai_akhir']);
+                                  final gradeVal = gradeItem['grade'] ?? '-';
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                "$mkName (Kelas $kelasName)",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: AppTheme.textDark,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: (gradeVal == 'A' || gradeVal == 'B') 
+                                                    ? Colors.green.withOpacity(0.1) 
+                                                    : Colors.orange.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                "Grade: $gradeVal",
+                                                style: TextStyle(
+                                                  color: (gradeVal == 'A' || gradeVal == 'B') 
+                                                      ? Colors.green 
+                                                      : Colors.orange,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const Divider(height: 16),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            _buildScoreColumn("Tugas", tugas),
+                                            _buildScoreColumn("UTS", uts),
+                                            _buildScoreColumn("UAS", uas),
+                                            _buildScoreColumn("Nilai Akhir", akhir),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                             ),
                           );
