@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/theme.dart';
 import '../../utils/supabase_config.dart';
+import '../../utils/format_utils.dart';
 
 class MhsClassDetailPage extends StatefulWidget {
   final Map<String, dynamic> kelasItem;
@@ -358,10 +359,10 @@ class _MhsClassDetailPageState extends State<MhsClassDetailPage> with SingleTick
       return const Center(child: Text("Nilai akhir belum diinput oleh Dosen"));
     }
 
-    final t = _myGrade!['nilai_tugas']?.toString() ?? '-';
-    final uts = _myGrade!['nilai_uts']?.toString() ?? '-';
-    final uas = _myGrade!['nilai_uas']?.toString() ?? '-';
-    final akhir = _myGrade!['nilai_akhir']?.toString() ?? '-';
+    final t = formatNilai(_myGrade!['nilai_tugas']);
+    final uts = formatNilai(_myGrade!['nilai_uts']);
+    final uas = formatNilai(_myGrade!['nilai_uas']);
+    final akhir = formatNilai(_myGrade!['nilai_akhir']);
     final grade = _myGrade!['grade'] ?? '-';
 
     return Center(

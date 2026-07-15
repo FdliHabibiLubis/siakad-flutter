@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/theme.dart';
 import '../../utils/supabase_config.dart';
+import '../../utils/format_utils.dart';
 
 class AdminAllGradesPage extends StatefulWidget {
   const AdminAllGradesPage({super.key});
@@ -90,10 +91,10 @@ class _AdminAllGradesPageState extends State<AdminAllGradesPage> {
                           final mk = item['kelas']['mata_kuliah'];
                           final mkName = mk['nama'] ?? '';
                           
-                          final tugas = item['nilai_tugas']?.toString() ?? '-';
-                          final uts = item['nilai_uts']?.toString() ?? '-';
-                          final uas = item['nilai_uas']?.toString() ?? '-';
-                          final akhir = item['nilai_akhir']?.toString() ?? '-';
+                          final tugas = formatNilai(item['nilai_tugas']);
+                          final uts = formatNilai(item['nilai_uts']);
+                          final uas = formatNilai(item['nilai_uas']);
+                          final akhir = formatNilai(item['nilai_akhir']);
                           final grade = item['grade'] ?? '-';
 
                           return Card(

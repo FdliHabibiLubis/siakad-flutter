@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../utils/theme.dart';
 import '../../utils/supabase_config.dart';
+import '../../utils/format_utils.dart';
 import 'submission_grading_page.dart';
 
 class ClassDetailPage extends StatefulWidget {
@@ -787,10 +788,10 @@ class _ClassDetailPageState extends State<ClassDetailPage> with SingleTickerProv
         final nama = m['users'] != null ? m['users']['nama'] : '-';
         final nim = m['nim'] ?? '';
         
-        final t = item['nilai_tugas']?.toString() ?? '-';
-        final uts = item['nilai_uts']?.toString() ?? '-';
-        final uas = item['nilai_uas']?.toString() ?? '-';
-        final akhir = item['nilai_akhir']?.toString() ?? '-';
+        final t = formatNilai(item['nilai_tugas']);
+        final uts = formatNilai(item['nilai_uts']);
+        final uas = formatNilai(item['nilai_uas']);
+        final akhir = formatNilai(item['nilai_akhir']);
         final grade = item['grade'] ?? '-';
 
         return Card(

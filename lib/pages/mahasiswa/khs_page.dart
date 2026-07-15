@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../utils/theme.dart';
 import '../../utils/supabase_config.dart';
+import '../../utils/format_utils.dart';
 
 class KhsPage extends StatefulWidget {
   final Map<String, dynamic> studentDetails;
@@ -267,7 +268,7 @@ class _KhsPageState extends State<KhsPage> {
                       mk['kode'] ?? '-',
                       mk['nama'] ?? '-',
                       mk['sks']?.toString() ?? '0',
-                      row['nilai_akhir']?.toString() ?? '-',
+                      formatNilai(row['nilai_akhir']),
                       row['grade'] ?? '-',
                       gPoint.toStringAsFixed(1),
                       (sksVal * gPoint).toStringAsFixed(1),
@@ -604,13 +605,13 @@ class _KhsPageState extends State<KhsPage> {
                         style: const TextStyle(fontSize: 11, color: AppTheme.textLight),
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
-                          _buildMiniBadge("Tugas: ${row['nilai_tugas'] ?? '-'}"),
-                          const SizedBox(width: 6),
-                          _buildMiniBadge("UTS: ${row['nilai_uts'] ?? '-'}"),
-                          const SizedBox(width: 6),
-                          _buildMiniBadge("UAS: ${row['nilai_uas'] ?? '-'}"),
+                          _buildMiniBadge("Tugas: ${formatNilai(row['nilai_tugas'])}"),
+                          _buildMiniBadge("UTS: ${formatNilai(row['nilai_uts'])}"),
+                          _buildMiniBadge("UAS: ${formatNilai(row['nilai_uas'])}"),
                         ],
                       )
                     ],
@@ -625,7 +626,7 @@ class _KhsPageState extends State<KhsPage> {
                     const Text("Nilai Akhir", style: TextStyle(fontSize: 9, color: AppTheme.textLight)),
                     const SizedBox(height: 1),
                     Text(
-                      row['nilai_akhir']?.toString() ?? '-',
+                      formatNilai(row['nilai_akhir']),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.primary),
                     ),
                   ],
