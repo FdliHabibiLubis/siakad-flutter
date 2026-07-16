@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../utils/theme.dart';
 import '../../utils/supabase_config.dart';
 
@@ -21,6 +24,7 @@ class _KrsPageState extends State<KrsPage> {
   final Set<String> _selectedJadwalIds = {};
   String _krsStatus = "draft"; // draft, menunggu, disetujui, ditolak
   int _totalSks = 0;
+  String _studentName = '';
 
   @override
   void initState() {
@@ -34,6 +38,10 @@ class _KrsPageState extends State<KrsPage> {
       final client = SupabaseConfig.client;
       final mId = widget.studentDetails['id'];
       final semId = widget.activeSemester['id'];
+
+      // Fetch student name from user profile
+      final profile = await SupabaseConfig.getCurrentUserProfile();
+      _studentName = profile?['nama'] ?? 'Mahasiswa';
 
       // 1. Fetch available schedules for the active semester
       final List<dynamic> schedules = await client
@@ -198,6 +206,245 @@ class _KrsPageState extends State<KrsPage> {
     }
   }
 
+  Future<void> _printPdf() async {
+    final pdf = pw.Document();
+    
+    // Get list of selected schedules
+    final List<Map<String, dynamic>> selectedSchedules = [];
+    for (var id in _selectedJadwalIds) {
+      final schedule = _availableJadwal.firstWhere(
+        (j) => j['id'].toString() == id,
+        orElse: () => {},
+      );
+      if (schedule.isNotEmpty) {
+        selectedSchedules.add(schedule);
+      }
+    }
+
+    // Sort selected schedules by day and time for cleaner presentation
+    final dayOrder = {
+      'Senin': 1,
+      'Selasa': 2,
+      'Rabu': 3,
+      'Kamis': 4,
+      'Jumat': 5,
+      'Sabtu': 6,
+      'Minggu': 7
+    };
+    selectedSchedules.sort((a, b) {
+      int valA = dayOrder[a['hari']] ?? 9;
+      int valB = dayOrder[b['hari']] ?? 9;
+      if (valA != valB) return valA.compareTo(valB);
+      return (a['jam_mulai'] ?? '').compareTo(b['jam_selesai'] ?? '');
+    });
+
+    final String statusDisplay = _krsStatus.toUpperCase();
+    final String semName = widget.activeSemester['nama'] ?? '-';
+    final String dateStr = "${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}";
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Padding(
+            padding: const pw.EdgeInsets.all(32),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header Instansi Akademik
+                pw.Center(
+                  child: pw.Column(
+                    children: [
+                      pw.Text(
+                        'KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI',
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'UNIVERSITAS PENGELOLA DATA MAHASISWA',
+                        style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      pw.Text(
+                        'Fakultas Ilmu Komputer dan Teknologi Informasi',
+                        style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Divider(thickness: 2),
+                      pw.SizedBox(height: 12),
+                      pw.Text(
+                        'KARTU RENCANA STUDI (KRS)',
+                        style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, decoration: pw.TextDecoration.underline),
+                      ),
+                      pw.SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+
+                // Informasi Biodata Mahasiswa
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Row(
+                          children: [
+                            pw.SizedBox(width: 80, child: pw.Text('Nama', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                            pw.Text(': $_studentName'),
+                          ],
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Row(
+                          children: [
+                            pw.SizedBox(width: 80, child: pw.Text('NIM', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                            pw.Text(': ${widget.studentDetails['nim']}'),
+                          ],
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Row(
+                          children: [
+                            pw.SizedBox(width: 90, child: pw.Text('Program Studi', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                            pw.Text(': ${widget.studentDetails['program_studi']?['nama'] ?? widget.studentDetails['program_studi_id'] ?? '-'}'),
+                          ],
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Row(
+                          children: [
+                            pw.SizedBox(width: 90, child: pw.Text('Semester', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                            pw.Text(': $semName'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 20),
+
+                // Tabel KRS
+                pw.Table.fromTextArray(
+                  headers: ['No', 'Kode MK', 'Mata Kuliah', 'Kelas', 'SKS', 'Dosen', 'Hari & Jam', 'Ruangan'],
+                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  cellAlignment: pw.Alignment.centerLeft,
+                  columnWidths: {
+                    0: const pw.FixedColumnWidth(25),
+                    1: const pw.FixedColumnWidth(60),
+                    2: const pw.FlexColumnWidth(3),
+                    3: const pw.FixedColumnWidth(40),
+                    4: const pw.FixedColumnWidth(30),
+                    5: const pw.FlexColumnWidth(2),
+                    6: const pw.FlexColumnWidth(2),
+                    7: const pw.FixedColumnWidth(45),
+                  },
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  data: List<List<dynamic>>.generate(selectedSchedules.length, (index) {
+                    final item = selectedSchedules[index];
+                    final k = item['kelas'] ?? {};
+                    final mk = k['mata_kuliah'] ?? {};
+                    final dName = k['dosen'] != null ? k['dosen']['users']['nama'] : '-';
+                    final timeStr = "${item['jam_mulai'].substring(0, 5)} - ${item['jam_selesai'].substring(0, 5)}";
+                    return [
+                      (index + 1).toString(),
+                      mk['kode'] ?? '-',
+                      mk['nama'] ?? '-',
+                      k['nama'] ?? '-',
+                      mk['sks']?.toString() ?? '0',
+                      dName,
+                      "${item['hari']}, $timeStr",
+                      item['ruangan'] ?? '-',
+                    ];
+                  }),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Ringkasan SKS dan Status KRS
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Container(
+                      padding: const pw.EdgeInsets.all(8),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey400, width: 1),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                      ),
+                      child: pw.Text(
+                        'STATUS KRS: $statusDisplay',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: _getKrsStatusPdfColor()),
+                      ),
+                    ),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.all(12),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey400, width: 1),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                      ),
+                      child: pw.Text(
+                        'Total SKS Diambil: $_totalSks SKS',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+                pw.Spacer(),
+
+                // Tanda Tangan
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      children: [
+                        pw.SizedBox(height: 12),
+                        pw.Text('Menyetujui,', style: const pw.TextStyle(fontSize: 10)),
+                        pw.Text('Dosen Wali Akademik', style: const pw.TextStyle(fontSize: 10)),
+                        pw.SizedBox(height: 50),
+                        pw.Text('( ___________________________ )', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Text('Medan, $dateStr', style: const pw.TextStyle(fontSize: 10)),
+                        pw.Text('Ketua Program Studi,', style: const pw.TextStyle(fontSize: 10)),
+                        pw.SizedBox(height: 50),
+                        pw.Text('( ___________________________ )', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'KRS_${widget.studentDetails['nim']}_${widget.activeSemester['nama']}.pdf',
+    );
+  }
+
+  PdfColor _getKrsStatusPdfColor() {
+    if (_krsStatus == 'disetujui') return PdfColors.green;
+    if (_krsStatus == 'menunggu') return PdfColors.orange;
+    if (_krsStatus == 'ditolak') return PdfColors.red;
+    return PdfColors.grey600;
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return months[month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     final locked = _krsStatus == 'menunggu' || _krsStatus == 'disetujui';
@@ -211,6 +458,13 @@ class _KrsPageState extends State<KrsPage> {
       appBar: AppBar(
         title: const Text("Isi Kartu Rencana Studi (KRS)"),
         automaticallyImplyLeading: !widget.isTab,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: "Cetak KRS",
+            onPressed: _selectedJadwalIds.isEmpty ? null : _printPdf,
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
